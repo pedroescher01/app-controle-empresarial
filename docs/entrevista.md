@@ -100,7 +100,48 @@ Respostas do Pedro, guardadas aqui para não se perderem. Atualizado a cada roda
     - Terceirizados: mão de obra inteira vai para o calheiro (salvo desconto combinado). Pago em Pix/dinheiro.
 64. **Agenda de serviços:** raro, mas útil quando o Dalvo agenda — com notificação.
 
+## Rodada 3 – Perguntas 65 a 94 (respondidas em 05/11/2026)
+
+### F. Bobinas e estoque
+65. **Material:** tudo galvanizado, sem cores.
+    - **Espessuras:** chapa 24 (0,60 mm, mais grossa) e chapa 26 (0,47 mm, padrão). Chapa 28 nunca usada, não cadastrar.
+    - **Cortes (cm):** 10, 15, 18, 20, 22, 25, 28, 30, 33, 35, 40, 45, 50, 55, 60, 65 e 120 (corte inteiro).
+    - **Cortes de 70 a 115 cm (de 5 em 5):** saem do corte de 120, mas o cliente paga só a largura usada. A sobra é aproveitada depois (ex.: tirou 80, sobram 40).
+67. **Controle atual:** cada bobina tem 2 unidades, uma na produção e outra no estoque. Quando a do estoque vai para a produção, é preciso repor (hoje anota no caderno).
+68. **Baixa automática / alerta de fim:** NÃO. É impreciso. Só precisa saber se há ou não bobina no estoque e marcar "precisa comprar".
+71. **Custo por metro:** não precisa.
+
+### G. Fornecedores e pedidos de compra
+72. **Fornecedor:** nome, CNPJ, nome do vendedor, telefone do vendedor. Só isso.
+73. **Fornecedores:** uns 5; hoje só compra da **Galvisa** (Leme), a mais barata. Pedro cadastra.
+74. **Fluxo do pedido:** Pedro anota as bobinas que faltam → manda no WhatsApp do vendedor → vendedor confirma → espera fechar a carga do caminhão → avisa (geralmente 1 dia antes, mas varia) e manda o PDF/nota com o valor → entrega em Araras → Pedro paga **no Pix, no dia da entrega**.
+    - O valor do pedido só é conhecido quando chega a nota do fornecedor.
+75. **Status:** A pedir → Pedido → Chegou → Pago. Sem pagamento parcial.
+76. **Saída do pedido:** mensagem pronta no WhatsApp (mais usada) e PDF para guardar.
+77. **Chegou:** as bobinas entram no estoque. **Pago:** vira saída no financeiro.
+78. **Histórico de preço da bobina:** sim, com gráfico.
+
+### H. Financeiro
+79. **Categorias de saída:** pagamento de calheiro, fornecedor, combustível, aluguel, impostos, ferramentas, alimentação e outras.
+80. **Pessoal x empresa:** quase não mistura. Alimentação do Pedro e do Dalvo sai da empresa. Toda sexta o Pedro retira **R$ 500,00** (salário; o dono da empresa é o Dalvo).
+81. **Contas fixas:** aluguel do barracão, aluguel da máquina, DAS/impostos, internet e outras contas. Pedro cadastra, com lembrete para pagar.
+82. **Contas a pagar e a receber:** sim, com notificações.
+83. **Contas bancárias:** **Sicoob** (principal) e **InfinitePay** (maquininha de cartão; o dinheiro é transferido depois para o Sicoob).
+84. **Comprovantes:** não precisa anexar.
+85. **Relatório do mês:** entradas, saídas e saldo (quanto sobrou). Também relatório do preço da bobina.
+86. **Formato:** PDF (guardar/imprimir) e tela com gráficos.
+87. **Contador:** não tem.
+88. **Metas:** não.
+
+### I. Migração
+89–91. Nada a importar; números de orçamento antigos não importam (aleatórios).
+
+### J. Prioridade
+92. **Ordem:** orçamentos → clientes → visitas → financeiro → bobinas/fornecedores → configurações (pode ser outra).
+93. **Prazo:** o quanto antes.
+94. **Mais funções:** nenhuma por enquanto.
+
 ## Pendências
-- Perguntas 65 a 94 (bobinas, fornecedores, financeiro, migração, prioridade).
+- Perguntas de acompanhamento: 41a, 41b, 42a, 44a, 44b, 47a, 63a, 64a e as da rodada 3.
 - Perguntas extras 35a, 35b, 35c (visitas).
 - Código `gerar_orcamento.py` (se for encontrado).
