@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../lib/db';
-import { useConfig, useOrcamentos } from '../lib/hooks';
+import { useConfig, useLancamentos, useOrcamentos, useVisitas } from '../lib/hooks';
 import { calcular, resumoPagamentos, statusVisual } from '../lib/calc';
 import { brl, dataExtenso, diasEntre, fmtData, haDias, hojeISO, nomeMes, waLink } from '../lib/format';
 import { go } from '../lib/router';
@@ -14,11 +12,11 @@ export function Inicio() {
   const orcs = useOrcamentos();
   const hoje = hojeISO();
   const mesISO = hoje.slice(0, 7);
-  const visitas = useLiveQuery(() => db.visitas.where('status').equals('a_medir').toArray(), [], []);
-  const servicosHoje = useLiveQuery(() => db.orcamentos.where('servicoData').equals(hoje).toArray(), [hoje], []);
+  const visitas = useVisitas().filter((v) => v.status === 'a_medir');
+  const servicosHoje = orcs.filter((o) => o.servicoData === hoje && o.status !== 'recusado');
   const maisAntiga = visitas.reduce<string | null>((m, v) => (!m || v.criadoEm < m ? v.criadoEm : m), null);
   const visitasHoje = visitas.filter((v) => v.data === hoje);
-  const recebidoMes = useLiveQuery(async () => (await db.lancamentos.where('data').startsWith(mesISO).toArray()).filter((l) => l.tipo === 'entrada').reduce((s, l) => s + l.valor, 0), [mesISO], 0);
+  const recebidoMes = useLancamentos().filter((l) => l.tipo === 'entrada' && l.data.startsWith(mesISO)).reduce((s, l) => s + l.valor, 0);
 
   const d = useMemo(() => {
     const ls = orcs.map((o) => {

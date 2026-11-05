@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRoute } from './lib/router';
-import { useConfig } from './lib/hooks';
+import { useConfig, useVisitas } from './lib/hooks';
 import { temPin } from './lib/pin';
 import { conferirAtualizacao } from './lib/atualizar';
 import { Icon, ToastProvider } from './components/ui';
@@ -10,8 +10,6 @@ import { OrcamentosLista } from './screens/Orcamentos';
 import { OrcamentoTela } from './screens/Orcamento';
 import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
 import { VisitaForm, VisitasLista } from './screens/Visitas';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './lib/db';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -112,7 +110,7 @@ export default function App() {
 function Shell({ onLock }: { onLock: () => void }) {
   const r = useRoute();
   const [a, b, c] = r;
-  const aMedir = useLiveQuery(() => db.visitas.where('status').equals('a_medir').count(), [], 0);
+  const aMedir = useVisitas().filter((v) => v.status === 'a_medir').length;
   let tela: JSX.Element;
   let aba = 'inicio';
   let barra = false;

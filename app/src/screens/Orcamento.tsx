@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Calheiro, type Cliente, type Item, type Orcamento, type StatusOrc } from '../lib/db';
 import { go, replace } from '../lib/router';
-import { useCalheiros, useClientes, useConfig } from '../lib/hooks';
+import { useCalheiros, useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
 import { CATALOGO, CONTAS, CORTES, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
 import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
@@ -14,7 +13,7 @@ import { novoCliente } from './Clientes';
 const ITEM_LIVRE: CatalogItem = { key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' };
 
 export function OrcamentoTela({ id }: { id: string }) {
-  const orc = useLiveQuery(() => db.orcamentos.get(id), [id]);
+  const orc = useRegistro(useOrcamentos(), db.orcamentos, id);
   if (orc === undefined) return null;
   if (!orc) return <Empty icon="doc" title="Orçamento não encontrado" action={<button className="btn" onClick={() => go('orcamentos')}>Voltar</button>} />;
   return <Editor key={orc.id} inicial={orc} />;
@@ -29,7 +28,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   ref.current = o;
 
   // pagamentos mudam por fora do editor (folha de pagamento) → acompanha o banco
-  const doBanco = useLiveQuery(() => db.orcamentos.get(inicial.id), [inicial.id]);
+  const doBanco = useOrcamentos().find((x) => x.id === inicial.id);
   useEffect(() => {
     if (doBanco && doBanco.pagamentos.length !== ref.current.pagamentos.length) setO((x) => ({ ...x, pagamentos: doBanco.pagamentos, parcelas: doBanco.parcelas, status: doBanco.status, aprovadoEm: doBanco.aprovadoEm }));
   }, [doBanco]);

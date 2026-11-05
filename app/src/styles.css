@@ -187,13 +187,8 @@ select.input { background-image: linear-gradient(45deg, transparent 50%, var(--f
 .tabs a[aria-current="page"] { color: var(--red); }
 
 /* ---------- folha (bottom sheet) ---------- */
-.scrim { position: fixed; inset: 0; touch-action: none; background: var(--scrim); z-index: 50; animation: fade .18s ease-out; }
-.sheet {
-  /* acompanha a área visível de verdade (com teclado aberto, fica colada em cima do teclado) */
-  position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100%); z-index: 51;
-  display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none;
-  padding-top: calc(40px + env(safe-area-inset-top, 0px)); animation: up .24s cubic-bezier(.2, .8, .2, 1);
-}
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 50; animation: fade .18s ease-out; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: calc(100% - 40px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; animation: up .24s cubic-bezier(.2, .8, .2, 1); }
 body.kb .sheet .bd { padding-bottom: 14px; }
 .sheet > .in { pointer-events: auto; overflow: hidden;  max-width: 480px; width: 100%; margin: 0 auto; background: var(--bg); border-radius: 20px 20px 0 0; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; min-height: 0; max-height: 100%; }
 .sheet .grab { width: 38px; height: 5px; border-radius: 9px; background: var(--line-strong); margin: 8px auto 2px; flex: none; }

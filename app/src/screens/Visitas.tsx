@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Calheiro, type Cliente, type Escada, type Periodo, type Visita } from '../lib/db';
 import { go, replace } from '../lib/router';
-import { useCalheiros, useClientes } from '../lib/hooks';
+import { useCalheiros, useClientes, useOrcamentos, useRegistro, useVisitas } from '../lib/hooks';
 import { addDias, diasEntre, fmtDataCurta, fromISO, haDias, hojeISO, iniciais, semAcento, telLink, uid, waLink } from '../lib/format';
 import { enderecoTexto } from '../lib/calc';
 import { Confirm, Empty, Icon, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
@@ -41,7 +40,7 @@ function mensagemConfirmacao(v: Visita) {
 
 // ======================= LISTA =======================
 export function VisitasLista({ aba }: { aba: string }) {
-  const visitas = useLiveQuery(() => db.visitas.orderBy('criadoEm').reverse().toArray(), [], []);
+  const visitas = useVisitas();
   const calheiros = useCalheiros();
   const [medir, setMedir] = useState<Visita | null>(null);
   const filtro = aba === 'medido' ? 'medido' : aba === 'agenda' ? 'agenda' : 'a_medir';
@@ -139,7 +138,7 @@ function MedidoSheet({ v, calheiros, onClose }: { v: Visita; calheiros: Calheiro
 // ======================= AGENDA =======================
 function Agenda({ visitas, calheiros }: { visitas: Visita[]; calheiros: Calheiro[] }) {
   const hoje = hojeISO();
-  const servicos = useLiveQuery(() => db.orcamentos.where('servicoData').aboveOrEqual(addDias(hoje, -7)).toArray(), [hoje], []);
+  const servicos = useOrcamentos().filter((o) => !!o.servicoData);
   type Ev = { id: string; data: string; periodo: Periodo | null | undefined; tipo: 'visita' | 'servico'; titulo: string; sub: string; href: string; atrasada: boolean };
   const eventos: Ev[] = [
     ...visitas.filter((v) => v.data && v.status === 'a_medir').map((v) => ({
@@ -187,7 +186,7 @@ const novaVisita = (): Visita => {
 };
 
 export function VisitaForm({ id }: { id?: string }) {
-  const existente = useLiveQuery(async () => (id ? (await db.visitas.get(id)) ?? null : null), [id]);
+  const existente = useRegistro(useVisitas(), db.visitas, id);
   if (id && existente === undefined) return null;
   if (id && !existente) return <Empty icon="pin" title="Visita não encontrada" action={<button className="btn" onClick={() => go('visitas')}>Voltar</button>} />;
   return <VisitaFormInner key={id ?? 'nova'} inicial={existente ?? novaVisita()} nova={!id} />;

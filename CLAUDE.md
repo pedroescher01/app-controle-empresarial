@@ -13,11 +13,16 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 ## Erros já corrigidos — NÃO repetir (conferir em toda tela nova)
 1. **Barras fixas soltas no iPhone com o teclado.** Nada de novo `position: fixed; bottom: ...`.
    - Barras de baixo (abas, total): escondem com `body.kb` (teclado aberto). Toda barra nova precisa entrar nessa regra.
-   - Janelas (Sheet): posicionadas pela área visível `--vv-top` / `--vv-h` e travam a página atrás (`travarPagina`).
+   - Janelas (Sheet): ficam SOLTAS, presas no fundo da tela (`bottom: 0`). NÃO travar a página atrás com
+     `position: fixed` no body nem prender a janela na área visível: no iPhone isso faz a janela "bater" e travar ao arrastar
+     (o Pedro reclamou duas vezes). Só `overflow: hidden` no body.
    - Avisos (toast) também usam `--vv-*`.
    - Sempre usar o componente `Sheet` para janelas; nunca criar outro modal na mão.
    - O conteúdo da janela (`.sheet .bd`) TEM que rolar: `flex: 1 1 auto; min-height: 0; overflow-y: auto`.
      Testar sempre com a área visível pequena (teclado aberto) e conferir se dá para chegar no botão do fim.
+1b. **Piscada ao trocar de tela.** Nunca buscar dados no banco dentro de cada tela (`useLiveQuery` por tela abre vazia
+   e mostra "Nenhum…" por um instante). Usar sempre os hooks de `lib/hooks.tsx` (`useDados`, `useOrcamentos`, `useRegistro`…),
+   que leem da memória carregada uma vez no `DadosProvider`. Toda tabela nova entra no `DadosProvider`.
 2. **Face ID**: `navigator.credentials.get/create` tem que ser chamado direto no toque, sem `await` antes;
    senão o iPhone mostra a janela "Iniciar Sessão / Usar Chave-senha". Não dá para abrir sozinho ao carregar.
 3. **Ícones**: desenhar com cuidado e conferir ampliado. Logos de marcas (WhatsApp) vetorizados do original, nunca à mão.

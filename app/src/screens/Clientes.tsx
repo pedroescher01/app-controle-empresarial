@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Cliente, type Endereco } from '../lib/db';
 import { go, replace } from '../lib/router';
-import { useClientes, useConfig } from '../lib/hooks';
+import { useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
 import { Confirm, Empty, Icon, PhoneInput, Pill, Seg, TopBar, useToast } from '../components/ui';
 import { brl, fmtData, iniciais, mapsLink, maskCNPJ, maskCPF, semAcento, telLink, uid, waLink } from '../lib/format';
 import { calcular, enderecoTexto, statusVisual } from '../lib/calc';
@@ -63,8 +62,8 @@ export function ClientesLista() {
 // ======================= DETALHE =======================
 export function ClienteDetalhe({ id }: { id: string }) {
   const cfg = useConfig();
-  const cliente = useLiveQuery(() => db.clientes.get(id), [id]);
-  const orcs = useLiveQuery(() => db.orcamentos.where('clienteId').equals(id).reverse().sortBy('emitidoEm'), [id], []);
+  const cliente = useRegistro(useClientes(), db.clientes, id);
+  const orcs = useOrcamentos().filter((o) => o.clienteId === id).sort((a, b) => b.emitidoEm.localeCompare(a.emitidoEm));
   const toast = useToast();
   if (cliente === undefined) return null;
   if (!cliente) return <Empty icon="users" title="Cliente não encontrado" action={<button className="btn" onClick={() => go('clientes')}>Voltar</button>} />;
@@ -130,7 +129,7 @@ export function ClienteDetalhe({ id }: { id: string }) {
 
 // ======================= FORMULÁRIO =======================
 export function ClienteForm({ id }: { id?: string }) {
-  const existente = useLiveQuery(async () => (id ? (await db.clientes.get(id)) ?? null : null), [id]);
+  const existente = useRegistro(useClientes(), db.clientes, id);
   if (id && existente === undefined) return null;
   return <ClienteFormInner key={id ?? 'novo'} inicial={existente ?? novoCliente()} novo={!id} />;
 }
