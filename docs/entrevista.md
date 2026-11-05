@@ -48,6 +48,59 @@ Respostas do Pedro, guardadas aqui para não se perderem. Atualizado a cada roda
 34. **Volume:** varia muito; já chegou a 5 visitas/dia.
 35. **Cobrança de visita:** não.
 
+## Rodada 2 – Perguntas 36 a 64 (respondidas em 05/11/2026)
+
+### D. Orçamentos
+36. **PDF:** exatamente igual ao modelo do Edgar (A5). Ajustes depois de ver.
+37. **E-mail no cabeçalho:** deixar vazio por enquanto (Pedro manda depois).
+38. **Número:** pode ser aleatório, mas NUNCA repetir. Serve para pesquisar o orçamento pelo número.
+39. **Acréscimo:** REMOVER do PDF. Cliente nunca vê acréscimo; ajustes são só internos.
+40. **Validade:** padrão 15 dias para aprovação.
+41. **Itens:** lista pronta + texto livre. Dois estilos:
+    - **Simples (o mais comum):** ex. "50 metros de calhas e rufos", "Mão de obra" — só valor total, unitário em branco.
+    - **Detalhado:** cada item com quantidade, unitário e total (quando o cliente pede).
+42. **Cálculo automático** corte × preço do metro × metragem: sim.
+43. **Tabela de preços:** sim, editável, mas escondida em Configurações (uso raro).
+44. **Preços atuais:**
+    | Item | Preço |
+    |---|---|
+    | Bocal (2" e 4") | R$ 10,00 un |
+    | Rebite / arrebite | R$ 0,30 un |
+    | Bucha | R$ 0,30 un |
+    | Brocante | R$ 0,30 un |
+    | Silicone | R$ 35,00 un |
+    | Estanho | R$ 35,00 un |
+    | Condutor quadrado 25 / 28 / 33 | R$ 25,00 o metro (barra de 2 m = R$ 50,00) |
+    | Condutor redondo 3" | R$ 30,00 o metro (barra de 2 m = R$ 60,00) |
+    | Suporte para calha (moldura) | R$ 15,00 un |
+    | Par de curva | R$ 75,00 o par |
+    | Tampa | sem preço |
+    | Calha / rufo / pingadeira | corte (m) × R$ 60 ou R$ 65 × metragem |
+46. **Ajuste para bater o total:** continua — diferença dividida só nos itens por metro (calhas e rufos). Nunca em itens por unidade nem no condutor.
+47. **Mão de obra:** sempre entra como item próprio (para mostrar que está inclusa).
+48. **Custo/lucro:** não precisa.
+49. **Status:** Rascunho → Enviado → Aprovado (→ pagamento: Em aberto / Parcial / Quitado / Vencido). Recusado existe mas é raro (cliente some).
+50. **Aviso de orçamento sem resposta:** sim, com botão para mandar mensagem de lembrete ao cliente no WhatsApp.
+51. **Envio:** WhatsApp Business. Botão para enviar direto seria ótimo.
+52. **Duplicar orçamento:** não precisa.
+53. **Juntar orçamentos:** manter (uso raro).
+54. **Parcelamento:** cliente de confiança — qualquer forma, com datas combinadas ou até sem data (vem acertar uma vez por mês). Senão, só cartão.
+55. **Pagamentos no PDF:** nas observações — data, valor, forma (Pix, dinheiro…) e quanto falta. Selo "P.G" ou "PAGO": tanto faz.
+56. **Pagamento → financeiro:** entra sozinho como entrada.
+57. **Nome do arquivo:** `Orçamento 364 - Edgar.pdf` (sem calheiro). Quando quitado: `Orçamento 364 - Edgar - PAGO.pdf`. Não marcar parcial no nome.
+58. **Pasta no Drive:** não criar mais.
+59. **Observações prontas:** não precisa; escreve na hora (raro).
+60. **Garantia:** existe, mas não aparece no orçamento.
+61. **Orçamentos antigos:** não importar.
+
+### E. Calheiros
+62. **Cadastro:** aba de calheiros, Pedro cadastra. Dalvo (pai do Pedro) é calheiro e trabalha na fábrica.
+63. **Pagamento:** pelo valor da mão de obra do orçamento.
+    - Dalvo + Miguel: dividem entre eles (Dalvo às vezes pega mais, cuida do carro/combustível); Dalvo diz quanto dar ao Miguel.
+    - Terceirizados: mão de obra inteira vai para o calheiro (salvo desconto combinado). Pago em Pix/dinheiro.
+64. **Agenda de serviços:** raro, mas útil quando o Dalvo agenda — com notificação.
+
 ## Pendências
-- Perguntas 36 a 94 (orçamentos, calheiros, bobinas, fornecedores, financeiro, prioridade).
+- Perguntas 65 a 94 (bobinas, fornecedores, financeiro, migração, prioridade).
+- Perguntas extras 35a, 35b, 35c (visitas).
 - Código `gerar_orcamento.py` (se for encontrado).
