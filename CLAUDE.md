@@ -16,6 +16,8 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
    - Janelas (Sheet): posicionadas pela área visível `--vv-top` / `--vv-h` e travam a página atrás (`travarPagina`).
    - Avisos (toast) também usam `--vv-*`.
    - Sempre usar o componente `Sheet` para janelas; nunca criar outro modal na mão.
+   - O conteúdo da janela (`.sheet .bd`) TEM que rolar: `flex: 1 1 auto; min-height: 0; overflow-y: auto`.
+     Testar sempre com a área visível pequena (teclado aberto) e conferir se dá para chegar no botão do fim.
 2. **Face ID**: `navigator.credentials.get/create` tem que ser chamado direto no toque, sem `await` antes;
    senão o iPhone mostra a janela "Iniciar Sessão / Usar Chave-senha". Não dá para abrir sozinho ao carregar.
 3. **Ícones**: desenhar com cuidado e conferir ampliado. Logos de marcas (WhatsApp) vetorizados do original, nunca à mão.
