@@ -155,7 +155,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         </button>
       )}
 
-      {o.itens.length > 0 && <button className="btn block ghost" onClick={() => setSheet('add')}><Icon name="plus" />Adicionar item</button>}
+      {o.itens.length > 0 && <button className="btn block ghost" onClick={() => addItem(ITEM_LIVRE)}><Icon name="plus" />Adicionar item</button>}
 
       {/* totais */}
       <div className="card list">
