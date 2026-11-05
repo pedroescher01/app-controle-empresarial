@@ -129,7 +129,8 @@ export function nomeArquivo(orc: Pick<Orcamento, 'numero' | 'clienteNome'>, quit
 /** Linhas automáticas das OBSERVAÇÕES: valor à vista e pagamentos. */
 export function linhasObservacoes(orc: Orcamento, total: number) {
   const linhas: string[] = [];
-  if (orc.valorAVista && orc.valorAVista > 0)
+  // depois do primeiro pagamento o "valor à vista" não serve mais (fica só guardado no sistema)
+  if (orc.valorAVista && orc.valorAVista > 0 && !orc.pagamentos.length)
     linhas.push(`Em caso de pagamento à vista, o valor será R$ ${dec2(orc.valorAVista)}.`);
   orc.observacoes
     .split('\n')
@@ -140,18 +141,17 @@ export function linhasObservacoes(orc: Orcamento, total: number) {
   let quitado = false;
   if (orc.pagamentos.length) {
     const pags = [...orc.pagamentos].sort((a, b) => a.data.localeCompare(b.data));
-    const n = Math.max(orc.parcelas || 1, pags.length);
+    const { saldo, situacao } = resumoPagamentos(orc, total);
+    quitado = situacao === 'quitado';
+    // se ainda falta pagar, nunca mostra "1 de 1": sempre há pelo menos mais uma parcela
+    const n = Math.max(orc.parcelas || 1, pags.length + (saldo > 0 ? 1 : 0));
     let acumulado = 0;
     pags.forEach((p, i) => {
       acumulado = r2(acumulado + p.valor);
       const falta = r2(Math.max(0, total - acumulado));
-      linhas.push(
-        `Parcela ${i + 1} de ${n} - paga em ${fmtData(p.data)} - R$ ${dec2(p.valor)} (${formaCurta(p.forma)}) - falta R$ ${dec2(falta)}`,
-      );
+      const fim = quitado && i === pags.length - 1 ? 'orçamento quitado.' : `falta R$ ${dec2(falta)}`;
+      linhas.push(`Parcela ${i + 1} de ${n} - paga em ${fmtData(p.data)} - R$ ${dec2(p.valor)} (${formaCurta(p.forma)}) - ${fim}`);
     });
-    const { pago, saldo, situacao } = resumoPagamentos(orc, total);
-    quitado = situacao === 'quitado';
-    linhas.push(quitado ? `Total pago: R$ ${dec2(pago)} - orçamento quitado.` : `Total pago: R$ ${dec2(pago)} - falta R$ ${dec2(saldo)}`);
   }
   return { linhas, quitado };
 }

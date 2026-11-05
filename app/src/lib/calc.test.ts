@@ -60,13 +60,16 @@ describe('textos', () => {
   it('pagamento quitado igual ao modelo do Edgar', () => {
     const o = orc({ pagamentos: [{ id: 'p', data: '2026-10-02', valor: 850, forma: 'Pix', conta: 'Sicoob' }] });
     const { linhas, quitado } = linhasObservacoes(o, 850);
-    expect(linhas).toEqual(['Parcela 1 de 1 - paga em 02/10/2026 - R$ 850,00 (Pix) - falta R$ 0,00', 'Total pago: R$ 850,00 - orçamento quitado.']);
+    expect(linhas).toEqual(['Parcela 1 de 1 - paga em 02/10/2026 - R$ 850,00 (Pix) - orçamento quitado.']);
     expect(quitado).toBe(true);
     expect(nomeArquivo(o, true)).toBe('Orçamento 364 - Edgar - PAGO.pdf');
   });
-  it('parcial', () => {
-    const o = orc({ parcelas: 3, pagamentos: [{ id: 'p', data: '2026-10-02', valor: 640, forma: 'Pix', conta: 'Sicoob' }] });
-    expect(linhasObservacoes(o, 1920).linhas[linhasObservacoes(o, 1920).linhas.length - 1]).toBe('Total pago: R$ 640,00 - falta R$ 1.280,00');
+  it('parcial: sem linha de total e sem "1 de 1"', () => {
+    const o = orc({ parcelas: 1, valorAVista: 1000, pagamentos: [{ id: 'p', data: '2026-11-05', valor: 300, forma: 'Pix', conta: 'Sicoob' }] });
+    expect(linhasObservacoes(o, 1120).linhas).toEqual(['Parcela 1 de 2 - paga em 05/11/2026 - R$ 300,00 (Pix) - falta R$ 820,00']);
+  });
+  it('à vista aparece só antes de pagar', () => {
+    expect(linhasObservacoes(orc({ valorAVista: 1000 }), 1120).linhas).toEqual(['Em caso de pagamento à vista, o valor será R$ 1.000,00.']);
   });
   it('endereço', () => {
     expect(enderecoTexto({ logradouro: 'Rua Flávio Mesquita', numero: '895', bairro: 'Jardim Cândida', cidade: 'Araras', uf: 'SP' })).toBe('Rua Flávio Mesquita, 895 - Jardim Cândida');

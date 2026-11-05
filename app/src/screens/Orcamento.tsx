@@ -184,7 +184,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         <div className="field">
           <label htmlFor="o-vista">Valor à vista <span className="faint">(opcional)</span></label>
           <MoneyInput id="o-vista" allowEmpty value={o.valorAVista} onChange={(v) => set({ valorAVista: v })} placeholder="—" />
-          {o.valorAVista ? <span className="hint">Vai nas observações: “Em caso de pagamento à vista, o valor será {brl(o.valorAVista)}.”</span> : null}
+          {o.valorAVista ? <span className="hint">{o.pagamentos.length ? 'Já tem pagamento registrado, então essa frase não sai mais no PDF. O valor fica guardado aqui.' : <>Vai nas observações: “Em caso de pagamento à vista, o valor será {brl(o.valorAVista)}.” Sai do PDF depois do primeiro pagamento.</>}</span> : null}
         </div>
         <div className="field"><label htmlFor="o-obs">Observações</label><textarea id="o-obs" className="input" value={o.observacoes} onChange={(e) => set({ observacoes: e.target.value })} placeholder="Ex.: Valor pode ser parcelado em até 3x sem juros." /></div>
       </div>
