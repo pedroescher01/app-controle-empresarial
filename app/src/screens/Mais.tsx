@@ -9,6 +9,7 @@ import { compartilharArquivo } from '../lib/share';
 import { Confirm, Empty, Icon, MoneyInput, PhoneInput, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { CalheiroRapido } from './Orcamento';
 import { Lock } from './Lock';
+import { VERSAO_ATUAL } from '../lib/atualizar';
 import { ativarFaceId, desativarFaceId, faceIdDisponivel } from '../lib/faceid';
 
 export function Mais({ onLock }: { onLock: () => void }) {
@@ -34,7 +35,7 @@ export function Mais({ onLock }: { onLock: () => void }) {
         <a className="row" href="#/mais/pin"><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Trocar PIN</div></div><Icon name="chev" className="chev" /></a>
         <button className="row" onClick={onLock}><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Bloquear agora</div></div></button>
       </div>
-      <p className="hint" style={{ textAlign: 'center' }}>Os dados ficam guardados neste iPhone. Faça backup toda semana.</p>
+      <p className="hint" style={{ textAlign: 'center' }}>Os dados ficam guardados neste iPhone. Faça backup toda semana.<br />Versão de {VERSAO_ATUAL ? new Date(VERSAO_ATUAL).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</p>
     </section>
   );
 }

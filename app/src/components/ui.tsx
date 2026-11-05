@@ -90,15 +90,34 @@ export function Seg<T extends string>({ value, options, onChange, label }: { val
 }
 
 // ---------- folha que sobe de baixo ----------
+// trava a página atrás da janela (no iPhone, overflow:hidden não basta: a página continua arrastando)
+let travas = 0;
+let scrollSalvo = 0;
+function travarPagina() {
+  if (travas++ > 0) return;
+  scrollSalvo = window.scrollY;
+  const b = document.body.style;
+  b.position = 'fixed';
+  b.top = `-${scrollSalvo}px`;
+  b.left = '0';
+  b.right = '0';
+  b.overflow = 'hidden';
+}
+function destravarPagina() {
+  if (--travas > 0) return;
+  const b = document.body.style;
+  b.position = b.top = b.left = b.right = b.overflow = '';
+  window.scrollTo(0, scrollSalvo);
+}
+
 export function Sheet({ open, onClose, title, children, right }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode; right?: ReactNode }) {
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    travarPagina();
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', k);
     return () => {
-      document.body.style.overflow = prev;
+      destravarPagina();
       window.removeEventListener('keydown', k);
     };
   }, [open, onClose]);

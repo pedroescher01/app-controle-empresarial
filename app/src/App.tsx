@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRoute } from './lib/router';
 import { useConfig } from './lib/hooks';
 import { temPin } from './lib/pin';
+import { conferirAtualizacao } from './lib/atualizar';
 import { Icon, ToastProvider } from './components/ui';
 import { Lock } from './screens/Lock';
 import { Inicio } from './screens/Inicio';
@@ -32,13 +33,26 @@ function useTeclado() {
         if (antes && !aberto) window.scrollTo(window.scrollX, window.scrollY);
       }, 60);
     };
+    // posição e altura da área visível (o teclado do iPhone encolhe essa área)
+    const medir = () => {
+      const vv = window.visualViewport;
+      const r = document.documentElement.style;
+      r.setProperty('--vv-top', `${vv ? vv.offsetTop : 0}px`);
+      r.setProperty('--vv-h', `${vv ? vv.height : window.innerHeight}px`);
+    };
+    medir();
+    const tudo = () => { medir(); atualizar(); };
     document.addEventListener('focusin', atualizar);
     document.addEventListener('focusout', atualizar);
-    window.visualViewport?.addEventListener('resize', atualizar);
+    window.visualViewport?.addEventListener('resize', tudo);
+    window.visualViewport?.addEventListener('scroll', medir);
+    window.addEventListener('resize', medir);
     return () => {
       document.removeEventListener('focusin', atualizar);
       document.removeEventListener('focusout', atualizar);
-      window.visualViewport?.removeEventListener('resize', atualizar);
+      window.visualViewport?.removeEventListener('resize', tudo);
+      window.visualViewport?.removeEventListener('scroll', medir);
+      window.removeEventListener('resize', medir);
     };
   }, []);
 }
@@ -66,13 +80,19 @@ export default function App() {
 
   useEffect(() => {
     temPin().then((t) => setEstado(t ? 'bloqueado' : 'criar'));
+    conferirAtualizacao();
   }, []);
 
   // bloqueia de novo depois de 5 min fora do app
   useEffect(() => {
     const f = () => {
-      if (document.hidden) saiuEm.current = Date.now();
-      else if (saiuEm.current && Date.now() - saiuEm.current > BLOQUEIO_MS) setEstado((e) => (e === 'livre' ? 'bloqueado' : e));
+      if (document.hidden) {
+        saiuEm.current = Date.now();
+        return;
+      }
+      if (saiuEm.current && Date.now() - saiuEm.current > BLOQUEIO_MS) setEstado((e) => (e === 'livre' ? 'bloqueado' : e));
+      // versão nova publicada: atualiza, mas nunca no meio de uma digitação ou janela aberta
+      if (!document.querySelector('input:focus, textarea:focus, .sheet')) conferirAtualizacao();
     };
     document.addEventListener('visibilitychange', f);
     return () => document.removeEventListener('visibilitychange', f);
