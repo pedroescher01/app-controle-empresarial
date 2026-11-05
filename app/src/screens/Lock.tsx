@@ -1,22 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/ui';
 import { conferirPin, definirPin } from '../lib/pin';
 import { pedirArmazenamentoPersistente } from '../lib/db';
+import { ativarFaceId, entrarComFaceId, faceIdAtivo, faceIdDisponivel } from '../lib/faceid';
 
 const N = 6;
 
-export function Lock({ criar, onOk }: { criar: boolean; onOk: () => void }) {
-  const [etapa, setEtapa] = useState<'entrar' | 'criar' | 'confirmar'>(criar ? 'criar' : 'entrar');
+export function Lock({ criar, onOk, oferecerFaceId = true }: { criar: boolean; onOk: () => void; oferecerFaceId?: boolean }) {
+  const [etapa, setEtapa] = useState<'entrar' | 'criar' | 'confirmar' | 'faceid'>(criar ? 'criar' : 'entrar');
   const [pin, setPin] = useState('');
   const [primeiro, setPrimeiro] = useState('');
   const [erro, setErro] = useState('');
   const [shake, setShake] = useState(false);
+  const [temFace, setTemFace] = useState(false);
+  const tentou = useRef(false);
 
   const falha = (msg: string) => {
     setErro(msg);
     setShake(true);
     setTimeout(() => { setShake(false); setPin(''); }, 380);
   };
+
+  const pedirFace = async () => {
+    try {
+      if (await entrarComFaceId()) onOk();
+    } catch {
+      /* cancelado ou sem permissão: fica no PIN */
+    }
+  };
+
+  // ao abrir: se o Face ID estiver ativo, já pede
+  useEffect(() => {
+    if (etapa !== 'entrar') return;
+    faceIdAtivo().then((ativo) => {
+      setTemFace(ativo);
+      if (ativo && !tentou.current) {
+        tentou.current = true;
+        pedirFace();
+      }
+    });
+  }, [etapa]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (pin.length !== N) return;
@@ -35,8 +58,9 @@ export function Lock({ criar, onOk }: { criar: boolean; onOk: () => void }) {
         }
         await definirPin(pin);
         await pedirArmazenamentoPersistente();
-        onOk();
-      } else {
+        if (oferecerFaceId && (await faceIdDisponivel()) && !(await faceIdAtivo())) setEtapa('faceid');
+        else onOk();
+      } else if (etapa === 'entrar') {
         if (await conferirPin(pin)) onOk();
         else falha('PIN errado. Tente de novo.');
       }
@@ -51,6 +75,25 @@ export function Lock({ criar, onOk }: { criar: boolean; onOk: () => void }) {
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, []);
+
+  if (etapa === 'faceid') {
+    return (
+      <main className="lock">
+        <div className="mark"><Icon name="face" style={{ width: 34, height: 34 }} /></div>
+        <div>
+          <h1>Entrar com Face ID?</h1>
+          <p>Fica mais rápido: é só olhar para o celular. O PIN continua valendo se o Face ID falhar.</p>
+        </div>
+        <div className="stack-s" style={{ width: '100%' }}>
+          <button className="btn block primary" onClick={async () => {
+            try { await ativarFaceId(); } catch { /* recusou: segue só com PIN */ }
+            onOk();
+          }}><Icon name="face" />Ativar Face ID</button>
+          <button className="btn block ghost" onClick={onOk}>Agora não</button>
+        </div>
+      </main>
+    );
+  }
 
   const titulo = etapa === 'entrar' ? 'Digite seu PIN' : etapa === 'criar' ? 'Crie um PIN de 6 números' : 'Digite o PIN de novo';
   const sub = etapa === 'entrar' ? 'Calhas Andrade' : etapa === 'criar' ? 'Ele vai proteger os dados da empresa neste celular.' : 'Só para confirmar.';
@@ -69,7 +112,9 @@ export function Lock({ criar, onOk }: { criar: boolean; onOk: () => void }) {
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
           <button key={d} onClick={() => setPin((p) => (p.length < N ? p + d : p))}>{d}</button>
         ))}
-        <span />
+        {etapa === 'entrar' && temFace
+          ? <button className="txt" aria-label="Entrar com Face ID" onClick={pedirFace}><Icon name="face" /></button>
+          : <span />}
         <button onClick={() => setPin((p) => (p.length < N ? p + '0' : p))}>0</button>
         <button className="txt" aria-label="Apagar" onClick={() => setPin((p) => p.slice(0, -1))}><Icon name="del" /></button>
       </div>

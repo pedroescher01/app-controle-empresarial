@@ -19,8 +19,8 @@ export type Backup = {
 export async function gerarBackup(): Promise<File> {
   const cfg = await getConfig();
   // o PIN não vai no backup
-  const { pinHash: _h, pinSalt: _s, ...configSemPin } = cfg;
-  void _h; void _s;
+  const { pinHash: _h, pinSalt: _s, faceIdCred: _f, ...configSemPin } = cfg;
+  void _h; void _s; void _f;
   const b: Backup = {
     app: 'calhas-andrade',
     versao: VERSAO,
@@ -60,7 +60,7 @@ export async function restaurarBackup(b: Backup) {
     await db.calheiros.bulkPut(b.dados.calheiros as never[]);
     await db.orcamentos.bulkPut(b.dados.orcamentos as never[]);
     await db.lancamentos.bulkPut(b.dados.lancamentos as never[]);
-    await db.config.put({ key: 'app', value: { ...cfg, ...b.dados.config, pinHash: cfg.pinHash, pinSalt: cfg.pinSalt } });
+    await db.config.put({ key: 'app', value: { ...cfg, ...b.dados.config, pinHash: cfg.pinHash, pinSalt: cfg.pinSalt, faceIdCred: cfg.faceIdCred } });
   });
 }
 

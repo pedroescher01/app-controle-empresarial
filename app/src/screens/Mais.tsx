@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { db, setConfig, type Calheiro } from '../lib/db';
 import { useCalheiros, useConfig } from '../lib/hooks';
 import { CATALOGO, precoCatalogo } from '../lib/catalog';
@@ -9,6 +9,7 @@ import { compartilharArquivo } from '../lib/share';
 import { Confirm, Empty, Icon, MoneyInput, PhoneInput, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { CalheiroRapido } from './Orcamento';
 import { Lock } from './Lock';
+import { ativarFaceId, desativarFaceId, faceIdDisponivel } from '../lib/faceid';
 
 export function Mais({ onLock }: { onLock: () => void }) {
   const cfg = useConfig();
@@ -29,6 +30,7 @@ export function Mais({ onLock }: { onLock: () => void }) {
       </div>
 
       <div className="card list">
+        <FaceIdLinha ativo={!!cfg.faceIdCred} />
         <a className="row" href="#/mais/pin"><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Trocar PIN</div></div><Icon name="chev" className="chev" /></a>
         <button className="row" onClick={onLock}><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Bloquear agora</div></div></button>
       </div>
@@ -192,5 +194,24 @@ export function BackupTela() {
 
 export function TrocarPin() {
   const toast = useToast();
-  return <Lock criar onOk={() => { toast('PIN trocado'); go('mais'); }} />;
+  return <Lock criar oferecerFaceId={false} onOk={() => { toast('PIN trocado'); go('mais'); }} />;
+}
+
+function FaceIdLinha({ ativo }: { ativo: boolean }) {
+  const toast = useToast();
+  const [ok, setOk] = useState<boolean | null>(null);
+  useEffect(() => { faceIdDisponivel().then(setOk); }, []);
+  if (ok === false) return (
+    <div className="row"><div className="ic mute"><Icon name="face" /></div><div className="main"><div className="t">Face ID</div><div className="s">Abra pelo ícone da tela de início do iPhone para usar</div></div></div>
+  );
+  return (
+    <button className="row" onClick={async () => {
+      if (ativo) { await desativarFaceId(); toast('Face ID desligado'); return; }
+      try { await ativarFaceId(); toast('Face ID ativado'); } catch { toast('O Face ID não foi ativado'); }
+    }}>
+      <div className={`ic ${ativo ? 'ok' : 'mute'}`}><Icon name="face" /></div>
+      <div className="main"><div className="t">Entrar com Face ID</div><div className="s">{ativo ? 'Ligado · o PIN fica de reserva' : 'Desligado'}</div></div>
+      <span className={`pill ${ativo ? 'ok' : 'mute'}`}>{ativo ? 'Ligado' : 'Ligar'}</span>
+    </button>
+  );
 }

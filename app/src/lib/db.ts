@@ -99,6 +99,8 @@ export type Config = {
   ultimoBackup: string | null;
   pinHash: string | null;
   pinSalt: string | null;
+  /** chave do Face ID (id da chave-senha do iPhone) */
+  faceIdCred: string | null;
 };
 
 export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';
@@ -113,6 +115,7 @@ export const CONFIG_PADRAO: Config = {
   ultimoBackup: null,
   pinHash: null,
   pinSalt: null,
+  faceIdCred: null,
 };
 
 type ConfigRow = { key: string; value: Config };
