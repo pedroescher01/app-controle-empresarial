@@ -12,6 +12,37 @@ import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './scree
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
 
+/**
+ * No iPhone, as barras fixas embaixo (abas e total) se perdem quando o teclado abre/fecha
+ * e ficam "soltas" no meio da tela. Enquanto o teclado estiver aberto, elas ficam escondidas.
+ */
+function useTeclado() {
+  useEffect(() => {
+    const ehCampo = (el: Element | null) =>
+      !!el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !['button', 'checkbox', 'radio', 'file', 'submit'].includes((el as HTMLInputElement).type)));
+    let t: number | undefined;
+    const atualizar = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => {
+        const vv = window.visualViewport;
+        const aberto = ehCampo(document.activeElement) || (!!vv && vv.height < window.innerHeight * 0.8);
+        const antes = document.body.classList.contains('kb');
+        document.body.classList.toggle('kb', aberto);
+        // ao fechar o teclado, força o iPhone a recalcular a posição das barras
+        if (antes && !aberto) window.scrollTo(window.scrollX, window.scrollY);
+      }, 60);
+    };
+    document.addEventListener('focusin', atualizar);
+    document.addEventListener('focusout', atualizar);
+    window.visualViewport?.addEventListener('resize', atualizar);
+    return () => {
+      document.removeEventListener('focusin', atualizar);
+      document.removeEventListener('focusout', atualizar);
+      window.visualViewport?.removeEventListener('resize', atualizar);
+    };
+  }, []);
+}
+
 function useTema() {
   const { tema } = useConfig();
   useEffect(() => {
@@ -29,6 +60,7 @@ function useTema() {
 
 export default function App() {
   useTema();
+  useTeclado();
   const [estado, setEstado] = useState<'carregando' | 'criar' | 'bloqueado' | 'livre'>('carregando');
   const saiuEm = useRef<number | null>(null);
 

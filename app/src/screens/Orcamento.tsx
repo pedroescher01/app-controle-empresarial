@@ -11,6 +11,8 @@ import { apagarOrcamento, apagarPagamento, registrarPagamento } from './orcament
 import { compartilharArquivo } from '../lib/share';
 import { novoCliente } from './Clientes';
 
+const ITEM_LIVRE: CatalogItem = { key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' };
+
 export function OrcamentoTela({ id }: { id: string }) {
   const orc = useLiveQuery(() => db.orcamentos.get(id), [id]);
   if (orc === undefined) return null;
@@ -60,7 +62,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   const pag = resumoPagamentos(o, r.total);
   const st = statusVisual(o, r.total);
 
-  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro'>(null);
+  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro' | 'add'>(null);
   const [itemEdit, setItemEdit] = useState<Item | null>(null);
   const fechar = useCallback(() => setSheet(null), []);
 
@@ -123,7 +125,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
       {/* adicionar */}
       <div className="chips" aria-label="Adicionar item">
         {CATALOGO.map((c) => <button key={c.key} className="chip add" onClick={() => addItem(c)}><Icon name="plus" />{c.chip}</button>)}
-        <button className="chip add" onClick={() => addItem({ key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' })}><Icon name="plus" />Outro item</button>
+        <button className="chip add" onClick={() => addItem(ITEM_LIVRE)}><Icon name="plus" />Outro item</button>
       </div>
 
       {/* itens */}
@@ -146,8 +148,14 @@ function Editor({ inicial }: { inicial: Orcamento }) {
           ))}
         </div>
       ) : (
-        <Empty icon="tag" title="Nenhum item" text="Toque nos botões acima para adicionar calha, rufo, acessórios e mão de obra." />
+        <button className="card empty" style={{ width: '100%', font: 'inherit', color: 'inherit' }} onClick={() => setSheet('add')}>
+          <div className="ic red"><Icon name="plus" /></div>
+          <b>Nenhum item</b>
+          <p>Toque aqui para adicionar calha, rufo, acessórios e mão de obra.</p>
+        </button>
       )}
+
+      {o.itens.length > 0 && <button className="btn block ghost" onClick={() => setSheet('add')}><Icon name="plus" />Adicionar item</button>}
 
       {/* totais */}
       <div className="card list">
@@ -211,6 +219,23 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         <button className="btn primary" onClick={() => { if (!o.clienteNome.trim()) { toast('Escolha o cliente primeiro'); setSheet('cliente'); return; } setSheet('pdf'); }}><Icon name="share" />Gerar PDF</button>
       </div></div>
 
+      <Sheet open={sheet === 'add'} onClose={fechar} title="Adicionar item">
+        {(['Calhas e rufos', 'Condutores', 'Acessórios', 'Serviço'] as const).map((g) => (
+          <div key={g} className="stack-s">
+            <div className="label" style={{ paddingLeft: 2 }}>{g}</div>
+            <div className="card list">
+              {CATALOGO.filter((c) => c.grupo === g).map((c) => (
+                <button key={c.key} className="row" onClick={() => addItem(c)}>
+                  <div className="main"><div className="t">{c.descricao}</div></div>
+                  <span className="small faint num">{c.tipo === 'metro' ? (c.corte ? `corte ${c.corte}` : 'preço livre') : c.tipo === 'mao' ? '' : `${brl(precoCatalogo(c, cfg.precos))} / ${c.unidade}`}</span>
+                  <Icon name="chev" className="chev" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button className="btn block" onClick={() => addItem(ITEM_LIVRE)}><Icon name="plus" />Outro item (digitar)</button>
+      </Sheet>
       <ClienteSheet open={sheet === 'cliente'} onClose={fechar} onPick={(c, endereco, telefone) => { set({ clienteId: c?.id || null, clienteNome: c?.nome ?? o.clienteNome, endereco, telefone }); fechar(); }} orc={o} />
       {itemEdit && <ItemSheet key={itemEdit.id} open={sheet === 'item'} item={itemEdit} novo={!o.itens.some((x) => x.id === itemEdit.id)} onClose={fechar} onSave={salvarItem} onRemove={removerItem} />}
       <PagamentoSheet open={sheet === 'pagamento'} onClose={fechar} saldo={pag.saldo} parcelasAtuais={o.parcelas} feitos={o.pagamentos.length} onSave={async (p, parcelas) => { await registrarPagamento({ ...o, pagamentos: doBanco?.pagamentos ?? o.pagamentos }, p, parcelas); fechar(); toast(`Anotado: ${brl(p.valor)} em ${fmtData(p.data)}, ${p.forma}`); }} />
