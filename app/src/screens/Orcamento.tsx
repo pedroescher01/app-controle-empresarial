@@ -148,10 +148,10 @@ function Editor({ inicial }: { inicial: Orcamento }) {
           ))}
         </div>
       ) : (
-        <button className="card empty" style={{ width: '100%', font: 'inherit', color: 'inherit' }} onClick={() => setSheet('add')}>
-          <div className="ic red"><Icon name="plus" /></div>
+        <button className="card empty" style={{ width: '100%', font: 'inherit', color: 'inherit' }} onClick={() => addItem(ITEM_LIVRE)}>
+          <div className="ic red"><Icon name="edit" /></div>
           <b>Nenhum item</b>
-          <p>Toque aqui para adicionar calha, rufo, acessórios e mão de obra.</p>
+          <p>Toque aqui para digitar um item, ou use os botões acima para os itens prontos.</p>
         </button>
       )}
 
