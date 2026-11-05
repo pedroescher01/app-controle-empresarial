@@ -101,11 +101,13 @@ export type Config = {
   pinSalt: string | null;
 };
 
+export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';
+
 export const CONFIG_PADRAO: Config = {
   precoMetro: 60,
   fatorChapa24: 1.5,
   validadeDias: 15,
-  email: '',
+  email: EMAIL_PADRAO,
   precos: {},
   tema: 'auto',
   ultimoBackup: null,
@@ -138,7 +140,9 @@ export const db = new CalhasDB();
 
 export async function getConfig(): Promise<Config> {
   const row = await db.config.get('app');
-  return { ...CONFIG_PADRAO, ...(row?.value ?? {}) };
+  const c = { ...CONFIG_PADRAO, ...(row?.value ?? {}) };
+  if (!c.email) c.email = EMAIL_PADRAO;
+  return c;
 }
 
 export async function setConfig(patch: Partial<Config>) {

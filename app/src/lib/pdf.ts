@@ -28,10 +28,12 @@ const W = 419.528;
 const H = 595.276;
 const M = 18;
 const R = W - M; // 401.5
-const LW = 0.795865;
+const LW = 0.8;
 const FS = 9.6;
 const ASC = 0.85; // posição da linha de base (ajustada à referência)
-const ROW = 15.43;
+const ROW = 15;
+const INNER_LW = 0.5;
+const INNER = 70; // cinza bem escuro nas linhas internas da grade
 const RED: [number, number, number] = [206, 18, 16];
 const GRAY = 239;
 
@@ -52,6 +54,17 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
     doc.setFont('Arimo', style);
     doc.setFontSize(size);
   };
+  // linhas alinhadas a uma grade de 1pt: evita que algumas saiam mais grossas na tela do celular
+  const g = (v: number) => Math.round(v);
+  const ln = (x1: number, y1: number, x2: number, y2: number) => doc.line(g(x1), g(y1), g(x2), g(y2));
+  const bx = (x: number, y: number, w: number, h: number, st?: string) => doc.rect(g(x), g(y), g(x + w) - g(x), g(y + h) - g(y), st);
+  const inner = (f: () => void) => {
+    doc.setLineWidth(INNER_LW);
+    doc.setDrawColor(INNER, INNER, INNER);
+    f();
+    doc.setLineWidth(LW);
+    doc.setDrawColor(0);
+  };
   const center = (t: string, x0: number, x1: number, top: number) => doc.text(t, (x0 + x1) / 2, base(top), { align: 'center' });
   const fit = (t: string, max: number) => {
     if (doc.getTextWidth(t) <= max) return t;
@@ -61,7 +74,7 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   };
 
   // ---------- cabeçalho ----------
-  doc.rect(M, M, R - M, 100.3);
+  bx(M, M, R - M, 100.3);
   const logoH = 75.3;
   const logoW = logoH * (619 / 584);
   doc.addImage(a.logo, 'PNG', 34.6 + (82.5 - logoW) / 2, 30.5, logoW, logoH);
@@ -77,18 +90,22 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   ].forEach((t, i) => doc.text(t, cx, base(57.9 + i * 10.65), { align: 'center' }));
 
   // ---------- nº / emitido / válido ----------
-  doc.rect(M, 126.2, R - M, 15.5);
-  doc.line(145.8, 126.2, 145.8, 141.7);
-  doc.line(273.7, 126.2, 273.7, 141.7);
+  bx(M, 126.2, R - M, 15.5);
+  inner(() => {
+    ln(145.8, 126.2, 145.8, 141.7);
+    ln(273.7, 126.2, 273.7, 141.7);
+  });
   center(`Orçamento nº: ${d.numero}`, M, 145.8, 129.8);
   center(`Emitido em: ${fmtData(d.emitidoEm)}`, 145.8, 273.7, 129.8);
   center(`Válido até: ${d.validoAte ? fmtData(d.validoAte) : '-'}`, 273.7, R, 129.8);
 
   // ---------- cliente ----------
   const cy = 149.6;
-  doc.rect(M, cy, R - M, 46.4);
-  doc.line(M, cy + 15.5, R, cy + 15.5);
-  doc.line(M, cy + 30.9, R, cy + 30.9);
+  bx(M, cy, R - M, 46.4);
+  inner(() => {
+    ln(M, cy + 15.5, R, cy + 15.5);
+    ln(M, cy + 30.9, R, cy + 30.9);
+  });
   [
     ['Cliente:', d.cliente],
     ['Endereço:', d.endereco || 'Não informado'],
@@ -106,13 +123,20 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   const nRows = Math.max(8, d.linhas.length);
   const tBottom = tTop + ROW * (nRows + 1);
   doc.setFillColor(GRAY, GRAY, GRAY);
-  doc.rect(M, tTop, R - M, ROW, 'FD');
-  doc.rect(M, tTop, R - M, tBottom - tTop);
-  for (let i = 1; i <= nRows; i++) doc.line(M, tTop + ROW * i, R, tTop + ROW * i);
-  cols.slice(1, -1).forEach((x) => doc.line(x, tTop, x, tBottom));
-  ['Quant.', 'Unid.', 'Descrição', 'Unitário', 'Total'].forEach((t, i) => center(t, cols[i], cols[i + 1], tTop + 3.5));
+  bx(M, tTop, R - M, ROW, 'FD');
+  bx(M, tTop, R - M, tBottom - tTop);
+  // linhas internas mais finas: na tela do celular nenhuma sai mais grossa que as outras
+  doc.setLineWidth(INNER_LW);
+  doc.setDrawColor(INNER, INNER, INNER);
+  for (let i = 2; i <= nRows; i++) ln(M, tTop + ROW * i, R, tTop + ROW * i);
+  cols.slice(1, -1).forEach((x) => ln(x, tTop + ROW, x, tBottom));
+  doc.setLineWidth(LW);
+  doc.setDrawColor(0);
+  ln(M, tTop + ROW, R, tTop + ROW);
+  cols.slice(1, -1).forEach((x) => ln(x, tTop, x, tTop + ROW));
+  ['Quant.', 'Unid.', 'Descrição', 'Unitário', 'Total'].forEach((t, i) => center(t, cols[i], cols[i + 1], tTop + 3.2));
   d.linhas.forEach((l, r) => {
-    const top = tTop + ROW * (r + 1) + 3.5;
+    const top = tTop + ROW * (r + 1) + 3.2;
     [l.quant, l.unid, l.desc, l.unit, l.total].forEach((t, i) => {
       if (t) center(fit(t, cols[i + 1] - cols[i] - 6), cols[i], cols[i + 1], top);
     });
@@ -122,10 +146,13 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   const sTop = tBottom + 15.9;
   const cw = (R - M) / 3;
   doc.setFillColor(GRAY, GRAY, GRAY);
-  doc.rect(M, sTop, R - M, 15.5, 'FD');
-  doc.rect(M, sTop, R - M, 30.9);
-  doc.line(M + cw, sTop, M + cw, sTop + 30.9);
-  doc.line(M + 2 * cw, sTop, M + 2 * cw, sTop + 30.9);
+  bx(M, sTop, R - M, 15.5, 'FD');
+  bx(M, sTop, R - M, 30.9);
+  ln(M, sTop + 15.5, R, sTop + 15.5);
+  inner(() => {
+    ln(M + cw, sTop, M + cw, sTop + 30.9);
+    ln(M + 2 * cw, sTop, M + 2 * cw, sTop + 30.9);
+  });
   [
     ['Subtotal', d.subtotal],
     ['Desconto', d.desconto],
@@ -140,8 +167,8 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   const maxW = R - 22.8 - 6;
   const linhas = d.observacoes.flatMap((t) => doc.splitTextToSize(t, maxW) as string[]);
   const oH = Math.max(79.1, 15.4 + 3.5 + linhas.length * 12.05 + 6);
-  doc.rect(M, oTop, R - M, oH);
-  doc.line(M, oTop + 15.4, R, oTop + 15.4);
+  bx(M, oTop, R - M, oH);
+  ln(M, oTop + 15.4, R, oTop + 15.4);
   font('bold');
   center('OBSERVAÇÕES', M, R, oTop + 3.5);
   font();
@@ -168,8 +195,8 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
     doc.setLineWidth(LW);
     sigY = 547.2;
   }
-  doc.line(37.2, sigY, 190.6, sigY);
-  doc.line(228.9, sigY, 382.4, sigY);
+  ln(37.2, sigY, 190.6, sigY);
+  ln(228.9, sigY, 382.4, sigY);
   center('Calhas Andrade', 37.2, 190.6, sigY + 7);
   center(fit(d.assinaturaCliente, 150), 228.9, 382.4, sigY + 7);
 

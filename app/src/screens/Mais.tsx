@@ -131,7 +131,7 @@ export function Empresa() {
         <div className="kv"><span className="k">Telefones</span><span className="num" style={{ textAlign: 'right' }}>(19) 98959-0119<br />(19) 99783-7079</span></div>
       </div>
       <div className="card form-card">
-        <div className="field"><label htmlFor="em">E-mail no cabeçalho</label><input id="em" className="input" type="email" inputMode="email" autoCapitalize="off" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => { setConfig({ email: email.trim() }); }} placeholder="Deixe em branco se não quiser" /></div>
+        <div className="field"><label htmlFor="em">E-mail no cabeçalho</label><input id="em" className="input" type="email" inputMode="email" autoCapitalize="off" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => { setConfig({ email: email.trim() }); }} placeholder="calhasandradeararas@gmail.com" /></div>
         <div className="field"><label htmlFor="vd">Validade padrão do orçamento</label>
           <select id="vd" className="input" value={cfg.validadeDias} onChange={(e) => { setConfig({ validadeDias: Number(e.target.value) }); toast('Validade alterada'); }}>
             {[7, 10, 15, 20, 30, 45, 60].map((d) => <option key={d} value={d}>{d} dias</option>)}
