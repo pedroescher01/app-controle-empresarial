@@ -7,12 +7,17 @@ import { brl, dataExtenso, diasEntre, fmtData, haDias, hojeISO, nomeMes, waLink 
 import { go } from '../lib/router';
 import { Icon, Pill } from '../components/ui';
 import { novoOrcamento } from './Orcamentos';
+import { quando } from './Visitas';
 
 export function Inicio() {
   const cfg = useConfig();
   const orcs = useOrcamentos();
   const hoje = hojeISO();
   const mesISO = hoje.slice(0, 7);
+  const visitas = useLiveQuery(() => db.visitas.where('status').equals('a_medir').toArray(), [], []);
+  const servicosHoje = useLiveQuery(() => db.orcamentos.where('servicoData').equals(hoje).toArray(), [hoje], []);
+  const maisAntiga = visitas.reduce<string | null>((m, v) => (!m || v.criadoEm < m ? v.criadoEm : m), null);
+  const visitasHoje = visitas.filter((v) => v.data === hoje);
   const recebidoMes = useLiveQuery(async () => (await db.lancamentos.where('data').startsWith(mesISO).toArray()).filter((l) => l.tipo === 'entrada').reduce((s, l) => s + l.valor, 0), [mesISO], 0);
 
   const d = useMemo(() => {
@@ -33,7 +38,8 @@ export function Inicio() {
   const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const mes = nomeMes(new Date().getMonth());
 
-  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0;
+  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0;
+  const agendaHoje = visitasHoje.length + servicosHoje.length;
 
   return (
     <section className="stack">
@@ -49,14 +55,41 @@ export function Inicio() {
 
       <div className="quick">
         <button onClick={novoOrcamento}><Icon name="doc" />Orçamento</button>
+        <button onClick={() => go('visita/nova')}><Icon name="pin" />Visita</button>
         <button onClick={() => go('cliente/novo')}><Icon name="users" />Cliente</button>
-        <button onClick={() => go('mais/backup')}><Icon name="hard" />Backup</button>
       </div>
+
+      {agendaHoje > 0 && (
+        <>
+          <div className="h2"><h2>Hoje</h2><a className="link" href="#/visitas/agenda">Agenda</a></div>
+          <div className="card list">
+            {visitasHoje.map((v) => (
+              <a key={v.id} className="row" href={`#/visita/${v.id}`}>
+                <div className="ic red"><Icon name="pin" /></div>
+                <div className="main"><div className="t">Medir: {v.nome}</div><div className="s">{quando(v.data, v.periodo)}{v.endereco ? ` · ${v.endereco}` : ''}</div></div>
+              </a>
+            ))}
+            {servicosHoje.map((o) => (
+              <a key={o.id} className="row" href={`#/orcamento/${o.id}`}>
+                <div className="ic info"><Icon name="helmet" /></div>
+                <div className="main"><div className="t">Serviço: {o.clienteNome}</div><div className="s">{quando(o.servicoData ?? null, o.servicoPeriodo)}{o.endereco ? ` · ${o.endereco}` : ''}</div></div>
+              </a>
+            ))}
+          </div>
+        </>
+      )}
 
       {atencao && (
         <>
           <div className="h2"><h2>Precisa da sua atenção</h2></div>
           <div className="card list">
+            {visitas.length > 0 && (
+              <button className="row" onClick={() => go('visitas')}>
+                <div className="ic red"><Icon name="pin" /></div>
+                <div className="main"><div className="t">{visitas.length} visita{visitas.length > 1 ? 's' : ''} a medir</div><div className="s">{maisAntiga ? (diasEntre(maisAntiga, hoje) >= 2 ? `A mais antiga espera ${haDias(maisAntiga)}` : diasEntre(maisAntiga, hoje) === 1 ? 'A mais antiga é de ontem' : 'Anotadas hoje') : ''}</div></div>
+                <Icon name="chev" className="chev" />
+              </button>
+            )}
             {precisaBackup && (
               <button className="row" onClick={() => go('mais/backup')}>
                 <div className="ic red"><Icon name="hard" /></div>

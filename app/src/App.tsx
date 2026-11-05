@@ -9,6 +9,9 @@ import { Inicio } from './screens/Inicio';
 import { OrcamentosLista } from './screens/Orcamentos';
 import { OrcamentoTela } from './screens/Orcamento';
 import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
+import { VisitaForm, VisitasLista } from './screens/Visitas';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from './lib/db';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -109,11 +112,14 @@ export default function App() {
 function Shell({ onLock }: { onLock: () => void }) {
   const r = useRoute();
   const [a, b, c] = r;
+  const aMedir = useLiveQuery(() => db.visitas.where('status').equals('a_medir').count(), [], 0);
   let tela: JSX.Element;
   let aba = 'inicio';
   let barra = false;
 
   switch (a) {
+    case 'visitas': tela = <VisitasLista aba={b ?? ''} />; aba = 'visitas'; break;
+    case 'visita': tela = b === 'nova' ? <VisitaForm /> : <VisitaForm id={b} />; aba = 'visitas'; break;
     case 'orcamentos': tela = <OrcamentosLista />; aba = 'orcamentos'; break;
     case 'orcamento': tela = <OrcamentoTela id={b} />; aba = 'orcamentos'; barra = true; break;
     case 'clientes': tela = <ClientesLista />; aba = 'clientes'; break;
@@ -134,11 +140,14 @@ function Shell({ onLock }: { onLock: () => void }) {
       <div className="tabs"><nav aria-label="Seções">
         {[
           ['inicio', 'home', 'Início'],
+          ['visitas', 'pin', 'Visitas'],
           ['orcamentos', 'doc', 'Orçamentos'],
           ['clientes', 'users', 'Clientes'],
           ['mais', 'more', 'Mais'],
         ].map(([k, i, l]) => (
-          <a key={k} href={`#/${k}`} aria-current={aba === k ? 'page' : undefined}><Icon name={i} />{l}</a>
+          <a key={k} href={`#/${k}`} aria-current={aba === k ? 'page' : undefined}>
+            {k === 'visitas' && aMedir > 0 ? <span className="badge-dot" data-n={aMedir > 99 ? '99+' : aMedir}><Icon name={i} /></span> : <Icon name={i} />}{l}
+          </a>
         ))}
       </nav></div>
     </>

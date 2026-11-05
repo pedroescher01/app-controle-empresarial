@@ -5,7 +5,7 @@ import { go, replace } from '../lib/router';
 import { useCalheiros, useClientes, useConfig } from '../lib/hooks';
 import { CATALOGO, CONTAS, CORTES, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
-import { brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
+import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { apagarOrcamento, apagarPagamento, registrarPagamento } from './orcamentoActions';
 import { compartilharArquivo } from '../lib/share';
@@ -187,6 +187,18 @@ function Editor({ inicial }: { inicial: Orcamento }) {
           {o.valorAVista ? <span className="hint">{o.pagamentos.length ? 'Já tem pagamento registrado, então essa frase não sai mais no PDF. O valor fica guardado aqui.' : <>Vai nas observações: “Em caso de pagamento à vista, o valor será {brl(o.valorAVista)}.” Sai do PDF depois do primeiro pagamento.</>}</span> : null}
         </div>
         <div className="field"><label htmlFor="o-obs">Observações</label><textarea id="o-obs" className="input" value={o.observacoes} onChange={(e) => set({ observacoes: e.target.value })} placeholder="Ex.: Valor pode ser parcelado em até 3x sem juros." /></div>
+      </div>
+
+      {/* serviço agendado */}
+      <div className="card form-card">
+        <h3>Serviço agendado {o.servicoData && <button className="link" onClick={() => set({ servicoData: null, servicoPeriodo: null })}>Tirar data</button>}</h3>
+        <div className="chips" style={{ flexWrap: 'wrap', margin: 0, padding: 0 }}>
+          {[['Hoje', hojeISO()], ['Amanhã', addDias(hojeISO(), 1)]].map(([l, d]) => <button key={l} className="chip" aria-pressed={o.servicoData === d} onClick={() => set({ servicoData: o.servicoData === d ? null : d })}>{l}</button>)}
+          <input type="date" className="input" aria-label="Data do serviço" value={o.servicoData ?? ''} onChange={(e) => set({ servicoData: e.target.value || null })} style={{ width: 'auto', minHeight: 38, padding: '6px 10px', fontSize: 15 }} />
+        </div>
+        {o.servicoData
+          ? <Seg label="Período do serviço" value={o.servicoPeriodo ?? 'x'} onChange={(p) => set({ servicoPeriodo: p === 'x' ? null : (p as 'manha' | 'tarde') })} options={[{ value: 'x', label: 'Qualquer hora' }, { value: 'manha', label: 'Manhã' }, { value: 'tarde', label: 'Tarde' }]} />
+          : <span className="hint">Quando combinar a instalação, coloque a data. Ela aparece na Agenda das visitas e no Início.</span>}
       </div>
 
       {/* situação */}

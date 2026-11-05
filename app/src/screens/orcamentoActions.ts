@@ -1,4 +1,4 @@
-import { db, getConfig, novoNumeroOrcamento, type Cliente, type Lancamento, type Orcamento, type Pagamento } from '../lib/db';
+import { db, getConfig, novoNumeroOrcamento, type Cliente, type Lancamento, type Orcamento, type Pagamento, type Visita } from '../lib/db';
 import { addDias, hojeISO, uid } from '../lib/format';
 import { enderecoTexto } from '../lib/calc';
 
@@ -74,4 +74,20 @@ export async function apagarOrcamento(orc: Orcamento) {
     await db.lancamentos.where('orcamentoId').equals(orc.id).delete();
     await db.orcamentos.delete(orc.id);
   });
+}
+
+/** Orçamento novo já com cliente, endereço, telefone e calheiro da visita; liga a visita ao orçamento. */
+export async function criarOrcamentoDaVisita(v: Visita): Promise<Orcamento> {
+  const cliente = v.clienteId ? (await db.clientes.get(v.clienteId)) ?? null : null;
+  const o = await criarOrcamento(cliente);
+  const patch: Partial<Orcamento> = {
+    clienteId: cliente?.id ?? null,
+    clienteNome: cliente?.nome ?? v.nome,
+    telefone: v.telefone || o.telefone,
+    endereco: v.endereco || o.endereco,
+    calheiroIds: v.calheiroId ? [v.calheiroId] : [],
+  };
+  await db.orcamentos.update(o.id, patch);
+  await db.visitas.update(v.id, { orcamentoId: o.id, status: 'medido', medidoEm: v.medidoEm ?? hojeISO(), atualizadoEm: new Date().toISOString() });
+  return { ...o, ...patch };
 }

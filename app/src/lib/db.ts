@@ -70,6 +70,35 @@ export type Orcamento = {
   aprovadoEm: string | null;
   parcelas: number;
   pagamentos: Pagamento[];
+  /** serviço agendado (instalação) */
+  servicoData?: string | null;
+  servicoPeriodo?: Periodo | null;
+  criadoEm: string;
+  atualizadoEm: string;
+};
+
+export type Escada = 'normal' | 'alta' | 'muito_alta';
+export type Periodo = 'manha' | 'tarde';
+
+export type Visita = {
+  id: string;
+  clienteId: string | null;
+  nome: string;
+  telefone: string;
+  endereco: string;
+  /** o que precisa ver: atalhos (Calha, Rufo…) */
+  precisa: string[];
+  /** o que precisa ver: texto livre */
+  detalhe: string;
+  escada: Escada;
+  status: 'a_medir' | 'medido';
+  /** data combinada (opcional; na maioria das vezes não tem) */
+  data: string | null;
+  periodo: Periodo | null;
+  /** calheiro que vai / que mediu */
+  calheiroId: string | null;
+  medidoEm: string | null;
+  orcamentoId: string | null;
   criadoEm: string;
   atualizadoEm: string;
 };
@@ -125,6 +154,7 @@ class CalhasDB extends Dexie {
   calheiros!: Table<Calheiro, string>;
   orcamentos!: Table<Orcamento, string>;
   lancamentos!: Table<Lancamento, string>;
+  visitas!: Table<Visita, string>;
   config!: Table<ConfigRow, string>;
 
   constructor() {
@@ -135,6 +165,10 @@ class CalhasDB extends Dexie {
       orcamentos: 'id, &numero, clienteId, status, emitidoEm, atualizadoEm',
       lancamentos: 'id, data, tipo, orcamentoId, pagamentoId',
       config: 'key',
+    });
+    this.version(2).stores({
+      visitas: 'id, status, clienteId, data, criadoEm, atualizadoEm',
+      orcamentos: 'id, &numero, clienteId, status, emitidoEm, atualizadoEm, servicoData',
     });
   }
 }
