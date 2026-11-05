@@ -141,7 +141,24 @@ Respostas do Pedro, guardadas aqui para não se perderem. Atualizado a cada roda
 93. **Prazo:** o quanto antes.
 94. **Mais funções:** nenhuma por enquanto.
 
+## Rodada 4 – Acompanhamento (respondida em 05/11/2026)
+
+- **35a.** Registrar qual calheiro foi medir: sim.
+- **35b.** Fila de visitas: da mais recente para a mais antiga, com rolagem (Pedro desce para conferir as antigas não medidas). Sugestão: mostrar "há X dias".
+- **35c.** Campo "o que precisa ver" (calha, rufo, condutor…) no cadastro da visita: sim.
+- **41a.** Orçamento simples: Quant. e Unid. preenchidas (ex.: 42 | m | Rufos); Unitário e Total da linha em branco. Só o total geral do orçamento aparece.
+- **41b.** Calha/rufo (metro) em uma linha; cada acessório (silicone, brocante, bucha…) em sua própria linha (unidade).
+- **42a.** Preço do metro padrão hoje: R$ 60 (editável em Configurações).
+- **42b.** Chapa 24 = 50% mais cara que a chapa 26.
+- **44a.** Condutor digitado em metros; mostrar a quantidade de barras entre parênteses (barra = 2 m).
+- **44b.** Tampa: não entra no orçamento (já faz parte da mão de obra).
+- **47a.** Calheiro do orçamento já fica identificado (nome entre parênteses no cliente); a mão de obra é dele, sem repetir.
+- **63a.** Controle de "a pagar ao calheiro": não precisa.
+- **64a.** Agendamento de **serviço** = ligado a um orçamento aprovado (fim do processo). Agendamento de **visita** = começo do processo.
+- **74a.** Nota da Galvisa vem com preço **por kg**.
+- **83a.** Taxa da maquininha: varia; Pedro informa depois. Campo editável em Configurações.
+
 ## Pendências
-- Perguntas de acompanhamento: 41a, 41b, 42a, 44a, 44b, 47a, 63a, 64a e as da rodada 3.
-- Perguntas extras 35a, 35b, 35c (visitas).
+- Confirmar banco de dados: Supabase (plano grátis).
+- Taxas da InfinitePay.
 - Código `gerar_orcamento.py` (se for encontrado).
