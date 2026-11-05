@@ -13,6 +13,7 @@ export type Backup = {
     orcamentos: unknown[];
     lancamentos: unknown[];
     visitas?: unknown[];
+    contasFixas?: unknown[];
     config: Partial<Config>;
   };
 };
@@ -32,6 +33,7 @@ export async function gerarBackup(): Promise<File> {
       orcamentos: await db.orcamentos.toArray(),
       lancamentos: await db.lancamentos.toArray(),
       visitas: await db.visitas.toArray(),
+      contasFixas: await db.contasFixas.toArray(),
       config: configSemPin,
     },
   };
@@ -56,13 +58,14 @@ export async function lerBackup(file: File): Promise<Backup> {
 
 export async function restaurarBackup(b: Backup) {
   const cfg = await getConfig();
-  await db.transaction('rw', [db.clientes, db.calheiros, db.orcamentos, db.lancamentos, db.visitas, db.config], async () => {
-    await Promise.all([db.clientes.clear(), db.calheiros.clear(), db.orcamentos.clear(), db.lancamentos.clear(), db.visitas.clear()]);
+  await db.transaction('rw', [db.clientes, db.calheiros, db.orcamentos, db.lancamentos, db.visitas, db.contasFixas, db.config], async () => {
+    await Promise.all([db.clientes.clear(), db.calheiros.clear(), db.orcamentos.clear(), db.lancamentos.clear(), db.visitas.clear(), db.contasFixas.clear()]);
     await db.clientes.bulkPut(b.dados.clientes as never[]);
     await db.calheiros.bulkPut(b.dados.calheiros as never[]);
     await db.orcamentos.bulkPut(b.dados.orcamentos as never[]);
     await db.lancamentos.bulkPut(b.dados.lancamentos as never[]);
     await db.visitas.bulkPut((b.dados.visitas ?? []) as never[]);
+    await db.contasFixas.bulkPut((b.dados.contasFixas ?? []) as never[]);
     await db.config.put({ key: 'app', value: { ...cfg, ...b.dados.config, pinHash: cfg.pinHash, pinSalt: cfg.pinSalt, faceIdCred: cfg.faceIdCred } });
   });
 }

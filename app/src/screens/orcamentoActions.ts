@@ -37,6 +37,8 @@ export async function criarOrcamento(cliente?: Cliente | null): Promise<Orcament
 /** Registra o pagamento no orçamento e lança a entrada no financeiro. */
 export async function registrarPagamento(orc: Orcamento, p: Omit<Pagamento, 'id'>, parcelas: number) {
   const pag: Pagamento = { ...p, id: uid() };
+  const cfg = await getConfig();
+  const pct = p.forma === 'Cartão de crédito' ? cfg.taxaCredito : p.forma === 'Cartão de débito' ? cfg.taxaDebito : 0;
   const lanc: Lancamento = {
     id: uid(),
     tipo: 'entrada',
@@ -48,6 +50,7 @@ export async function registrarPagamento(orc: Orcamento, p: Omit<Pagamento, 'id'
     conta: p.conta,
     orcamentoId: orc.id,
     pagamentoId: pag.id,
+    taxa: pct ? Math.round(p.valor * pct) / 100 : undefined,
     criadoEm: new Date().toISOString(),
   };
   await db.transaction('rw', db.orcamentos, db.lancamentos, async () => {

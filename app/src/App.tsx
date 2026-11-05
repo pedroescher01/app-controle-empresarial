@@ -10,6 +10,7 @@ import { OrcamentosLista } from './screens/Orcamentos';
 import { OrcamentoTela } from './screens/Orcamento';
 import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
 import { VisitaForm, VisitasLista } from './screens/Visitas';
+import { ContasFixas, Financeiro, FinanceiroAno } from './screens/Financeiro';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -119,10 +120,14 @@ function Shell({ onLock }: { onLock: () => void }) {
     case 'visitas': tela = <VisitasLista aba={b ?? ''} />; aba = 'visitas'; break;
     case 'visita': tela = b === 'nova' ? <VisitaForm /> : <VisitaForm id={b} />; aba = 'visitas'; break;
     case 'orcamentos': tela = <OrcamentosLista />; aba = 'orcamentos'; break;
+    case 'financeiro':
+      aba = 'financeiro';
+      tela = b === 'contas' ? <ContasFixas /> : b === 'ano' ? <FinanceiroAno ano={c} /> : <Financeiro mes={b === 'mes' ? c : undefined} />;
+      break;
     case 'orcamento': tela = <OrcamentoTela id={b} />; aba = 'orcamentos'; barra = true; break;
-    case 'clientes': tela = <ClientesLista />; aba = 'clientes'; break;
+    case 'clientes': tela = <ClientesLista />; aba = 'mais'; break;
     case 'cliente':
-      aba = 'clientes';
+      aba = 'mais';
       tela = b === 'novo' ? <ClienteForm /> : c === 'editar' ? <ClienteForm id={b} /> : <ClienteDetalhe id={b} />;
       break;
     case 'mais':
@@ -140,7 +145,7 @@ function Shell({ onLock }: { onLock: () => void }) {
           ['inicio', 'home', 'Início'],
           ['visitas', 'pin', 'Visitas'],
           ['orcamentos', 'doc', 'Orçamentos'],
-          ['clientes', 'users', 'Clientes'],
+          ['financeiro', 'cash', 'Financeiro'],
           ['mais', 'more', 'Mais'],
         ].map(([k, i, l]) => (
           <a key={k} href={`#/${k}`} aria-current={aba === k ? 'page' : undefined}>

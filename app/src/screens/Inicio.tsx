@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useConfig, useLancamentos, useOrcamentos, useVisitas } from '../lib/hooks';
+import { useConfig, useContasFixas, useLancamentos, useOrcamentos, useVisitas } from '../lib/hooks';
+import { contasProximas } from '../lib/financeiro';
 import { calcular, resumoPagamentos, statusVisual } from '../lib/calc';
 import { brl, dataExtenso, diasEntre, fmtData, haDias, hojeISO, nomeMes, waLink } from '../lib/format';
 import { go } from '../lib/router';
@@ -16,7 +17,9 @@ export function Inicio() {
   const servicosHoje = orcs.filter((o) => o.servicoData === hoje && o.status !== 'recusado');
   const maisAntiga = visitas.reduce<string | null>((m, v) => (!m || v.criadoEm < m ? v.criadoEm : m), null);
   const visitasHoje = visitas.filter((v) => v.data === hoje);
-  const recebidoMes = useLancamentos().filter((l) => l.tipo === 'entrada' && l.data.startsWith(mesISO)).reduce((s, l) => s + l.valor, 0);
+  const lancamentos = useLancamentos();
+  const contasVencendo = contasProximas(useContasFixas(), lancamentos, 3);
+  const recebidoMes = lancamentos.filter((l) => l.tipo === 'entrada' && l.data.startsWith(mesISO)).reduce((s, l) => s + l.valor, 0);
 
   const d = useMemo(() => {
     const ls = orcs.map((o) => {
@@ -36,7 +39,7 @@ export function Inicio() {
   const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const mes = nomeMes(new Date().getMonth());
 
-  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0;
+  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0 || contasVencendo.length > 0;
   const agendaHoje = visitasHoje.length + servicosHoje.length;
 
   return (
@@ -81,6 +84,13 @@ export function Inicio() {
         <>
           <div className="h2"><h2>Precisa da sua atenção</h2></div>
           <div className="card list">
+            {contasVencendo.map((v) => (
+              <a key={v.conta.id + v.data} className="row" href="#/financeiro">
+                <div className={`ic ${v.atrasada ? 'red' : 'warn'}`}><Icon name="clock" /></div>
+                <div className="main"><div className="t">{v.conta.descricao}</div><div className="s" style={{ color: v.atrasada ? 'var(--red)' : undefined }}>{v.atrasada ? `Atrasada desde ${fmtData(v.data)}` : v.data === hoje ? 'Vence hoje' : `Vence ${fmtData(v.data)}`}</div></div>
+                <div className="v">{brl(v.conta.valor)}</div>
+              </a>
+            ))}
             {visitas.length > 0 && (
               <button className="row" onClick={() => go('visitas')}>
                 <div className="ic red"><Icon name="pin" /></div>

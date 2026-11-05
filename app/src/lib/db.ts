@@ -114,6 +114,27 @@ export type Lancamento = {
   conta: string;
   orcamentoId?: string;
   pagamentoId?: string;
+  /** taxa da maquininha descontada (cartão) */
+  taxa?: number;
+  /** conta fixa paga com este lançamento, e o vencimento a que se refere */
+  contaFixaId?: string;
+  referencia?: string;
+  criadoEm: string;
+};
+
+/** Conta que se repete (aluguel, DAS, internet, retirada semanal) ou conta avulsa com vencimento (boleto). */
+export type ContaFixa = {
+  id: string;
+  descricao: string;
+  categoria: string;
+  /** valor de sempre (pode mudar na hora de pagar, ex.: conta de luz) */
+  valor: number;
+  repete: 'mensal' | 'semanal' | 'unica';
+  /** mensal: dia do mês (1–31); semanal: dia da semana (0 = domingo … 6 = sábado) */
+  dia: number;
+  /** só para 'unica' */
+  vencimento: string | null;
+  ativa: boolean;
   criadoEm: string;
 };
 
@@ -130,6 +151,9 @@ export type Config = {
   pinSalt: string | null;
   /** chave do Face ID (id da chave-senha do iPhone) */
   faceIdCred: string | null;
+  /** taxas da maquininha (%), descontadas das entradas no cartão */
+  taxaCredito: number;
+  taxaDebito: number;
 };
 
 export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';
@@ -145,6 +169,8 @@ export const CONFIG_PADRAO: Config = {
   pinHash: null,
   pinSalt: null,
   faceIdCred: null,
+  taxaCredito: 0,
+  taxaDebito: 0,
 };
 
 type ConfigRow = { key: string; value: Config };
@@ -155,6 +181,7 @@ class CalhasDB extends Dexie {
   orcamentos!: Table<Orcamento, string>;
   lancamentos!: Table<Lancamento, string>;
   visitas!: Table<Visita, string>;
+  contasFixas!: Table<ContaFixa, string>;
   config!: Table<ConfigRow, string>;
 
   constructor() {
@@ -169,6 +196,10 @@ class CalhasDB extends Dexie {
     this.version(2).stores({
       visitas: 'id, status, clienteId, data, criadoEm, atualizadoEm',
       orcamentos: 'id, &numero, clienteId, status, emitidoEm, atualizadoEm, servicoData',
+    });
+    this.version(3).stores({
+      contasFixas: 'id, ativa',
+      lancamentos: 'id, data, tipo, orcamentoId, pagamentoId, contaFixaId',
     });
   }
 }

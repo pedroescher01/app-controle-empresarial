@@ -251,3 +251,15 @@ body.kb .toast { top: calc(var(--vv-top, 0px) + var(--vv-h, 100vh) - 70px); }
 .ladder i.on { opacity: 1; }
 .badge-dot { position: relative; display: inline-flex; }
 .badge-dot::after { content: attr(data-n); position: absolute; top: -4px; right: -10px; background: var(--red); color: var(--on-red); font-size: 10px; font-weight: 700; border-radius: 99px; padding: 0 5px; line-height: 15px; border: 2px solid var(--surface); }
+
+/* ---------- financeiro ---------- */
+.mes-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -6px; }
+.mes-nav b { font-family: var(--f-display); font-size: 17px; font-weight: 700; text-transform: capitalize; }
+.mes-nav .icon-btn:disabled { opacity: .35; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; display: flex; }
+.bar span { display: block; height: 100%; }
+.chart { padding: 14px 12px 8px; }
+.chart svg { width: 100%; height: auto; display: block; font-family: var(--f-body); }
+.legend { display: inline-flex; gap: 12px; font-size: 12.5px; color: var(--fg-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }

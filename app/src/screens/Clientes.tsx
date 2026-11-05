@@ -29,7 +29,7 @@ export function ClientesLista() {
 
   return (
     <section className="stack">
-      <TopBar eyebrow={`${clientes.length} cadastrado${clientes.length === 1 ? '' : 's'}`} title="Clientes" right={<button className="icon-btn red" aria-label="Novo cliente" onClick={() => go('cliente/novo')}><Icon name="plus" /></button>} />
+      <TopBar onBack={() => go('mais')} backLabel="Mais" eyebrow={`${clientes.length} cadastrado${clientes.length === 1 ? '' : 's'}`} title="Clientes" right={<button className="icon-btn red" aria-label="Novo cliente" onClick={() => go('cliente/novo')}><Icon name="plus" /></button>} />
       <div className="search">
         <Icon name="search" />
         <input className="input" type="search" placeholder="Buscar por nome, telefone ou bairro" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar cliente" />

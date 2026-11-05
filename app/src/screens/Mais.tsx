@@ -19,6 +19,10 @@ export function Mais({ onLock }: { onLock: () => void }) {
     <section className="stack">
       <TopBar eyebrow="Ajustes do sistema" title="Mais" />
       <div className="card list">
+        <a className="row" href="#/clientes"><div className="ic red"><Icon name="users" /></div><div className="main"><div className="t">Clientes</div><div className="s">Cadastro, histórico e contato</div></div><Icon name="chev" className="chev" /></a>
+        <a className="row" href="#/financeiro/contas"><div className="ic warn"><Icon name="clock" /></div><div className="main"><div className="t">Contas fixas e maquininha</div><div className="s">Aluguel, DAS, retirada, taxas do cartão</div></div><Icon name="chev" className="chev" /></a>
+      </div>
+      <div className="card list">
         <a className="row" href="#/mais/precos"><div className="ic red"><Icon name="tag" /></div><div className="main"><div className="t">Tabela de preços</div><div className="s">Metro a {brl(cfg.precoMetro)} · chapa 24 +{Math.round((cfg.fatorChapa24 - 1) * 100)}%</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/mais/calheiros"><div className="ic info"><Icon name="helmet" /></div><div className="main"><div className="t">Calheiros</div><div className="s">{calheiros.length ? calheiros.map((c) => c.nome).join(', ') : 'Nenhum cadastrado'}</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/mais/backup"><div className="ic ok"><Icon name="hard" /></div><div className="main"><div className="t">Backup dos dados</div><div className="s">{cfg.ultimoBackup ? `Último ${haDias(cfg.ultimoBackup)}` : 'Nunca feito'}</div></div><Icon name="chev" className="chev" /></a>
