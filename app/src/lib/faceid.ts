@@ -41,10 +41,16 @@ export async function desativarFaceId() {
   await setConfig({ faceIdCred: null });
 }
 
-/** Pede o Face ID. Retorna true só se o iPhone confirmou que é você. */
-export async function entrarComFaceId(): Promise<boolean> {
-  const id = (await getConfig()).faceIdCred;
-  if (!id) return false;
+export async function idFaceId() {
+  return (await getConfig()).faceIdCred;
+}
+
+/**
+ * Pede o Face ID. Retorna true só se o iPhone confirmou que é você.
+ * Precisa ser chamado direto do toque (sem await antes), senão o iPhone mostra
+ * a janela "Iniciar Sessão / Usar Chave-senha" em vez de ir direto ao Face ID.
+ */
+export async function entrarComFaceId(id: string): Promise<boolean> {
   const cred = (await navigator.credentials.get({
     publicKey: {
       challenge: aleatorio(32),
