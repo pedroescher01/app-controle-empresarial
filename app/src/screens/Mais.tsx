@@ -133,6 +133,7 @@ export function Empresa() {
           </select>
         </div>
       </div>
+      <PixConfig />
     </section>
   );
 }
@@ -206,5 +207,26 @@ function FaceIdLinha({ ativo }: { ativo: boolean }) {
       <div className="main"><div className="t">Entrar com Face ID</div><div className="s">{ativo ? 'Ligado · o PIN fica de reserva' : 'Desligado'}</div></div>
       <span className={`pill ${ativo ? 'ok' : 'mute'}`}>{ativo ? 'Ligado' : 'Ligar'}</span>
     </button>
+  );
+}
+
+function PixConfig() {
+  const cfg = useConfig();
+  const toast = useToast();
+  const [chave, setChave] = useState(cfg.pixChave);
+  const [nome, setNome] = useState(cfg.pixNome);
+  const [cidade, setCidade] = useState(cfg.pixCidade);
+  const salvar = (p: Partial<typeof cfg>) => { setConfig(p); toast('Pix salvo'); };
+  return (
+    <>
+      <div className="h2"><h2>Pix para cobrança</h2></div>
+      <div className="card form-card">
+        <div className="field"><label htmlFor="px-c">Chave Pix</label><input id="px-c" className="input" autoCapitalize="off" value={chave} onChange={(e) => setChave(e.target.value)} onBlur={() => chave.trim() !== cfg.pixChave && salvar({ pixChave: chave.trim() })} placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória" /></div>
+        <div className="field"><label htmlFor="px-n">Nome de quem recebe</label><input id="px-n" className="input" autoCapitalize="words" value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => nome.trim() !== cfg.pixNome && salvar({ pixNome: nome.trim() })} placeholder="Como aparece no banco" /></div>
+        <div className="field"><label htmlFor="px-ci">Cidade</label><input id="px-ci" className="input" autoCapitalize="words" value={cidade} onChange={(e) => setCidade(e.target.value)} onBlur={() => cidade.trim() !== cfg.pixCidade && salvar({ pixCidade: cidade.trim() || 'Araras' })} /></div>
+        <Seg label="QR no PDF" value={cfg.pixNoPdf ? 's' : 'n'} onChange={(v) => salvar({ pixNoPdf: v === 's' })} options={[{ value: 'n', label: 'Sem QR no PDF' }, { value: 's', label: 'QR do Pix no PDF' }]} />
+        <span className="hint">Com “QR do Pix no PDF”, o orçamento sai com o QR Code do valor que falta pagar. O cliente lê com o celular e paga direto.</span>
+      </div>
+    </>
   );
 }

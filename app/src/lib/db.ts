@@ -218,6 +218,12 @@ export type Config = {
   /** taxas da maquininha (%), descontadas das entradas no cartão */
   taxaCredito: number;
   taxaDebito: number;
+  /** Pix para cobrança (QR e copia e cola) */
+  pixChave: string;
+  pixNome: string;
+  pixCidade: string;
+  /** mostrar o QR do Pix no PDF do orçamento (quando falta pagar) */
+  pixNoPdf: boolean;
 };
 
 export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';
@@ -235,6 +241,10 @@ export const CONFIG_PADRAO: Config = {
   faceIdCred: null,
   taxaCredito: 0,
   taxaDebito: 0,
+  pixChave: '',
+  pixNome: '',
+  pixCidade: 'Araras',
+  pixNoPdf: false,
 };
 
 type ConfigRow = { key: string; value: Config };

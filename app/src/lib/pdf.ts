@@ -2,6 +2,7 @@
 // As medidas abaixo foram tiradas do PDF de referência (Orçamento 364 - Edgar).
 import { jsPDF } from 'jspdf';
 import { dec2, qtd, fmtData } from './format';
+import { pixCopiaECola, qrMatriz } from './pix';
 
 export type PDFLinha = { quant: string; unid: string; desc: string; unit: string; total: string };
 
@@ -20,6 +21,8 @@ export type PDFDados = {
   quitado: boolean;
   assinaturaCliente: string;
   email: string;
+  /** QR do Pix do valor que falta (opcional) */
+  pix?: { codigo: string; valor: number } | null;
 };
 
 export type PDFAssets = { regular: string; bold: string; logo: Uint8Array };
@@ -164,7 +167,9 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
 
   // ---------- observações ----------
   const oTop = sTop + 30.9 + 8;
-  const maxW = R - 22.8 - 6;
+  const QR = 64;
+  const comPix = !!d.pix;
+  const maxW = R - 22.8 - 6 - (comPix ? QR + 12 : 0);
   // na linha de quitação: "orçamento quitado." nunca quebra no meio e sobra espaço para o selo P.G
   const selo = doc.getTextWidth('P.G') + 14;
   const linhas = d.observacoes.flatMap((t, i) => {
@@ -172,12 +177,25 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
     const txt = ultima ? t.replace('orçamento quitado.', 'orçamento\u00a0quitado.') : t;
     return (doc.splitTextToSize(txt, ultima ? maxW - selo : maxW) as string[]).map((l) => l.replace(/\u00a0/g, ' '));
   });
-  const oH = Math.max(79.1, 15.4 + 3.5 + linhas.length * 12.05 + 6);
+  const oH = Math.max(79.1, 15.4 + 3.5 + linhas.length * 12.05 + 6, comPix ? 15.4 + 6 + QR + 14 : 0);
   bx(M, oTop, R - M, oH);
   ln(M, oTop + 15.4, R, oTop + 15.4);
   font('bold');
   center('OBSERVAÇÕES', M, R, oTop + 3.5);
   font();
+  if (d.pix) {
+    // QR Code do Pix, à direita das observações
+    const m = qrMatriz(d.pix.codigo);
+    const n = m.length;
+    const tam = QR / n;
+    const x0 = R - 6 - QR;
+    const y0 = oTop + 15.4 + 5;
+    doc.setFillColor(0, 0, 0);
+    m.forEach((linha, r) => linha.forEach((on, c) => { if (on) doc.rect(x0 + c * tam, y0 + r * tam, tam + 0.05, tam + 0.05, 'F'); }));
+    font('normal', 7.2);
+    doc.text(`Pix: R$ ${dec2(d.pix.valor)}`, x0 + QR / 2, y0 + QR + 8, { align: 'center' });
+    font();
+  }
   linhas.forEach((t, i) => {
     const top = oTop + 18.9 + i * 12.05;
     doc.text(t, 22.8, base(top));
@@ -243,6 +261,11 @@ export function dadosDoOrcamento(orc: Orcamento, calheiros: Calheiro[], cfg: Con
     quitado,
     assinaturaCliente: orc.clienteNome,
     email: cfg.email,
+    pix: (() => {
+      const falta = Math.round((r.total - orc.pagamentos.reduce((s, p) => s + p.valor, 0)) * 100) / 100;
+      if (!cfg.pixNoPdf || !cfg.pixChave || !cfg.pixNome || falta <= 0) return null;
+      return { valor: falta, codigo: pixCopiaECola({ chave: cfg.pixChave, nome: cfg.pixNome, cidade: cfg.pixCidade || 'Araras', valor: falta, txid: `ORC${orc.numero}` }) };
+    })(),
   };
 }
 

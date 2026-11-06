@@ -7,6 +7,7 @@ import { CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, DIAS_SEMANA, doMes, hojeMes, liqu
 import { brl, fmtData, fmtDataCurta, hojeISO, parseDecimal, uid } from '../lib/format';
 import { Confirm, Empty, Icon, MoneyInput, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { compartilharArquivo } from '../lib/share';
+import { PixSheet } from '../components/PixSheet';
 
 // ======================= MÊS =======================
 export function Financeiro({ mes: mesRota }: { mes?: string }) {
@@ -17,7 +18,7 @@ export function Financeiro({ mes: mesRota }: { mes?: string }) {
   const r = useMemo(() => resumo(doMesL), [doMesL]);
   const venc = useMemo(() => vencimentos(contas, lancs, mes), [contas, lancs, mes]);
   const aPagar = venc.filter((v) => !v.paga);
-  const [sheet, setSheet] = useState<null | 'entrada' | 'saida' | 'relatorio'>(null);
+  const [sheet, setSheet] = useState<null | 'entrada' | 'saida' | 'relatorio' | 'pix'>(null);
   const [editar, setEditar] = useState<Lancamento | null>(null);
   const [pagar, setPagar] = useState<Vencimento | null>(null);
   const atual = mes === hojeMes();
@@ -48,6 +49,7 @@ export function Financeiro({ mes: mesRota }: { mes?: string }) {
         <button onClick={() => setSheet('saida')}><Icon name="upload" />Saída</button>
         <button onClick={() => setSheet('relatorio')}><Icon name="doc" />Relatório</button>
       </div>
+      <button className="btn block ghost" style={{ marginTop: -6 }} onClick={() => setSheet('pix')}><Icon name="cash" />Cobrar no Pix (venda avulsa)</button>
 
       <div className="h2"><h2>Contas a pagar</h2><a className="link" href="#/financeiro/contas">Contas fixas</a></div>
       {!contas.length ? (
@@ -108,6 +110,7 @@ export function Financeiro({ mes: mesRota }: { mes?: string }) {
       {(sheet === 'entrada' || sheet === 'saida') && <LancamentoSheet tipo={sheet} onClose={() => setSheet(null)} />}
       {editar && <LancamentoSheet tipo={editar.tipo} existente={editar} onClose={() => setEditar(null)} />}
       {pagar && <PagarSheet v={pagar} onClose={() => setPagar(null)} />}
+      {sheet === 'pix' && <PixSheet valorInicial={0} onClose={() => setSheet(null)} />}
       {sheet === 'relatorio' && <RelatorioSheet tipo="mes" chave={mes} onClose={() => setSheet(null)} />}
     </section>
   );

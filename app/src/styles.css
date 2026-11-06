@@ -298,3 +298,8 @@ a.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
 .switch i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s; }
 .switch.on { background: var(--ok); }
 .switch.on i { transform: translateX(18px); }
+
+/* Pix */
+.pix-qr { width: min(240px, 70vw); aspect-ratio: 1; margin: 0 auto; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.pix-qr svg { width: 100%; height: 100%; display: block; }
+.pix-code { font-size: 11.5px; line-height: 1.35; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; word-break: break-all; color: var(--fg-2); max-height: 90px; overflow-y: auto; }

@@ -10,6 +10,7 @@ import { apagarOrcamento, apagarPagamento, registrarPagamento, separarJuncao } f
 import { compartilharArquivo } from '../lib/share';
 import { novoCliente } from './Clientes';
 import { DescontoMaterial } from './Calheiro';
+import { PixSheet } from '../components/PixSheet';
 import { sugestoes as sugestoesMaterial } from '../lib/adiantamento';
 
 const ITEM_LIVRE: CatalogItem = { key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' };
@@ -80,7 +81,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   const pag = resumoPagamentos(o, r.total);
   const st = statusVisual(o, r.total);
 
-  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro' | 'add' | 'separar'>(null);
+  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro' | 'add' | 'separar' | 'pix'>(null);
   const [itemEdit, setItemEdit] = useState<Item | null>(null);
   const fechar = useCallback(() => setSheet(null), []);
 
@@ -253,7 +254,12 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         ))}
         <div className="kv"><span className="k">Pago</span><span className="v">{brl(pag.pago)}</span></div>
         <div className="kv"><span className="k">Falta</span><span className="v" style={{ color: pag.saldo > 0 ? 'var(--red)' : 'var(--ok)' }}>{pag.saldo > 0 ? brl(pag.saldo) : 'Quitado'}</span></div>
-        {pag.saldo > 0 && <div className="row"><button className="btn block ghost" onClick={() => setSheet('pagamento')} disabled={r.total <= 0}><Icon name="cash" />Registrar pagamento</button></div>}
+        {pag.saldo > 0 && (
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn ghost grow" onClick={() => setSheet('pix')} disabled={r.total <= 0}><Icon name="cash" />Cobrar no Pix</button>
+            <button className="btn ghost grow" onClick={() => setSheet('pagamento')} disabled={r.total <= 0}><Icon name="check" />Registrar pagamento</button>
+          </div>
+        )}
       </div>
 
       {o.status === 'enviado' && o.telefone && (
@@ -290,6 +296,8 @@ function Editor({ inicial }: { inicial: Orcamento }) {
       <PagamentoSheet open={sheet === 'pagamento'} onClose={fechar} saldo={pag.saldo} parcelasAtuais={o.parcelas} feitos={o.pagamentos.length} calheirosOrc={o.calheiroIds.map((id) => calheiros.find((c) => c.id === id)).filter(Boolean) as Calheiro[]} maoDeObra={r.linhas.filter((l) => l.item.tipo === 'mao').reduce((s, l) => s + l.total, 0)} onSave={async (p, parcelas) => { await registrarPagamento({ ...o, pagamentos: doBanco?.pagamentos ?? o.pagamentos }, p, parcelas); fechar(); toast(p.forma === DIRETO_CALHEIRO ? `Anotado: ${brl(p.valor)} pago direto ao ${p.conta} (fora do financeiro)` : `Anotado: ${brl(p.valor)} em ${fmtData(p.data)}, ${p.forma}`); }} />
       <PdfSheet open={sheet === 'pdf'} onClose={fechar} orc={o} calheiros={calheiros} quitado={pag.situacao === 'quitado' && o.pagamentos.length > 0} onEnviado={() => { if (o.status === 'rascunho') set({ status: 'enviado', enviadoEm: hojeISO() }); }} />
       <CalheiroRapido open={sheet === 'calheiro'} onClose={fechar} onCriado={(c) => set({ calheiroIds: [...o.calheiroIds, c.id] })} />
+      {sheet === 'pix' && <PixSheet onClose={fechar} telefone={o.telefone} nomeCliente={o.clienteNome} referencia={`ORC${o.numero}`} mensagem={`Segue o Pix do orçamento nº ${o.numero}`}
+        valorInicial={Math.round((pag.saldo / Math.max(1, Math.max(o.parcelas, o.pagamentos.length + 1) - o.pagamentos.length)) * 100) / 100} />}
       <Confirm open={sheet === 'separar'} onClose={fechar} title="Separar de novo?" text={`Este orçamento junto (nº ${o.numero}) será apagado e os ${origens.length} orçamentos antigos voltam ao normal.`} confirmLabel="Separar" onConfirm={async () => { apagado.current = true; window.clearTimeout(timer.current); await separarJuncao(o); toast('Orçamentos separados de novo'); replace('orcamentos'); }} />
       <Confirm open={sheet === 'apagar'} onClose={fechar} title={`Apagar o orçamento nº ${o.numero}?`} text={o.pagamentos.length ? 'Os pagamentos dele também saem do financeiro. Não dá para desfazer.' : 'Não dá para desfazer.'} confirmLabel="Apagar" danger onConfirm={async () => { apagado.current = true; window.clearTimeout(timer.current); await apagarOrcamento(o); toast('Orçamento apagado'); replace('orcamentos'); }} />
     </section>
