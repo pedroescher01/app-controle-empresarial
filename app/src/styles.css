@@ -195,6 +195,7 @@ body.kb .sheet .bd { padding-bottom: 14px; }
 .sheet .hd { display: flex; align-items: center; gap: 10px; padding: 8px 16px 10px; flex: none; }
 .sheet .hd h2 { flex: 1; margin: 0; font-family: var(--f-display); font-stretch: 92%; font-size: 20px; font-weight: 750; }
 .sheet .bd { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 4px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 14px; -webkit-overflow-scrolling: touch; }
+.sheet .bd > * { flex-shrink: 0; }
 @keyframes up { from { transform: translateY(40px); opacity: .4; } }
 @keyframes fade { from { opacity: 0; } }
 
@@ -284,9 +285,9 @@ body.kb .toast { top: calc(var(--vv-top, 0px) + var(--vv-h, 100vh) - 70px); }
 .stepper span { min-width: 30px; text-align: center; font-family: var(--f-display); font-weight: 700; }
 .etapa { display: flex; gap: 12px; padding: 14px; }
 .etapa + .etapa { border-top: 1px solid var(--line); }
-.etapa .num-et { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); color: var(--fg-2); }
-.etapa.feita .num-et { background: var(--ok); color: #fff; }
-.etapa .num-et svg { width: 15px; height: 15px; }
+.etapa .num-et, .num-et { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); color: var(--fg-2); }
+.etapa.feita .num-et, .num-et.feita { background: var(--ok); color: #fff; }
+.num-et svg { width: 15px; height: 15px; }
 .etapa .btns { grid-template-columns: 1.4fr 1fr; }
 a.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
 

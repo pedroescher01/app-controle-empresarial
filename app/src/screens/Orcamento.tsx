@@ -4,7 +4,7 @@ import { go, replace } from '../lib/router';
 import { useAdiantamentos, useCalheiros, useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
 import { CATALOGO, CONTAS, CORTES, DIRETO_CALHEIRO, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
-import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
+import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, onlyDigits, qtd, r2, semAcento, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { apagarOrcamento, apagarPagamento, registrarPagamento, separarJuncao } from './orcamentoActions';
 import { compartilharArquivo } from '../lib/share';
@@ -534,6 +534,16 @@ function PdfSheet({ open, onClose, orc, calheiros, quitado, onEnviado }: { open:
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+  const [passo, setPasso] = useState(1);
+  useEffect(() => { if (open) setPasso(1); }, [open]);
+  const tel = onlyDigits(orc.telefone).length >= 10 ? orc.telefone : '';
+  const total = calcular(orc, cfg).total;
+  const msg = `Olá, ${orc.clienteNome.split(' ')[0]}! Tudo bem? Aqui é o Pedro, da Calhas Andrade. Segue o orçamento nº ${orc.numero}, no valor de ${brl(total)}. Qualquer dúvida estou à disposição!`;
+  const enviar = async () => {
+    if (!file) return;
+    const r = await compartilharArquivo(file);
+    if (r !== 'cancelado') { onEnviado(); toast(r === 'ok' ? 'PDF enviado' : 'PDF baixado'); onClose(); }
+  };
 
   return (
     <Sheet open={open} onClose={onClose} title="PDF do orçamento">
@@ -543,10 +553,22 @@ function PdfSheet({ open, onClose, orc, calheiros, quitado, onEnviado }: { open:
             <iframe title="Prévia do PDF" src={url + '#toolbar=0&view=FitH'} style={{ width: '100%', height: '100%', border: 0 }} />
           </div>
           <div className="small muted" style={{ wordBreak: 'break-word' }}>{file.name}</div>
-          <button className="btn block primary" onClick={async () => {
-            const r = await compartilharArquivo(file);
-            if (r !== 'cancelado') { onEnviado(); toast(r === 'ok' ? 'PDF enviado' : 'PDF baixado'); onClose(); }
-          }}><Icon name="share" />Enviar (WhatsApp, Arquivos…)</button>
+          {tel ? (
+            <div className="card list" style={{ boxShadow: 'none' }}>
+              <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                <div className="hrow" style={{ gap: 10 }}><span className={`num-et ${passo > 1 ? 'feita' : ''}`}>{passo > 1 ? <Icon name="check" /> : 1}</span><b>Abrir a conversa de {orc.clienteNome.split(' ')[0]}</b></div>
+                <a className={`btn block ${passo === 1 ? 'primary' : ''}`} href={waLink(tel, msg)} target="_blank" rel="noreferrer" onClick={() => setPasso(2)}><Icon name="wa" />WhatsApp de {maskPhone(tel)}</a>
+                <span className="hint">Abre direto, mesmo sem o número salvo, com a mensagem pronta. Mande a mensagem e volte aqui.</span>
+              </div>
+              <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                <div className="hrow" style={{ gap: 10 }}><span className="num-et">2</span><b>Mandar o PDF</b></div>
+                <button className={`btn block ${passo === 2 ? 'primary' : ''}`} onClick={enviar}><Icon name="share" />Enviar o PDF</button>
+                <span className="hint">Escolha o WhatsApp: a conversa de {orc.clienteNome.split(' ')[0]} vai estar em primeiro na lista.</span>
+              </div>
+            </div>
+          ) : (
+            <button className="btn block primary" onClick={enviar}><Icon name="share" />Enviar (WhatsApp, Arquivos…)</button>
+          )}
           <a className="btn block" href={url} target="_blank" rel="noreferrer"><Icon name="doc" />Abrir em tela cheia</a>
         </>
       )}
