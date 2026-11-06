@@ -3,6 +3,7 @@ import { db, type Fornecedor, type ItemPedido, type NivelProducao, type Pedido }
 import { go, replace } from '../lib/router';
 import { useBobinas, useConfig, useFornecedores, usePedidos, useRegistro } from '../lib/hooks';
 import { CORTES_BOBINA, CONTAS, FORMAS_PAGAMENTO, contaPadrao } from '../lib/catalog';
+import { BobinaDefs, BobinaIcone } from '../components/Bobina';
 import { CHAPAS, ESPESSURA, NIVEIS, bobinasParaComprar, estadoBobina, listaPrioridade, nivelBobina, prioridade, historicoPreco, mensagemPedido, ordenarItens, resumoPedido, statusPedido, variacao } from '../lib/bobinas';
 import { brl, dec2, fmtData, fmtDataCurta, hojeISO, iniciais, maskCNPJ, maskPhone, telLink, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
@@ -44,6 +45,7 @@ export function Bobinas() {
         <span><i style={{ background: 'var(--warn-soft)', border: '1px solid var(--warn)' }} />De olho</span>
         <span><i style={{ background: 'var(--info-soft)', border: '1px solid var(--info)' }} />Pedida</span>
       </div>
+      <BobinaDefs />
       <div className="grid-b">
         {CORTES_BOBINA.map((corte) => {
           const pr = prioridade(bobinas, pedidos, chapa, corte);
@@ -53,13 +55,13 @@ export function Bobinas() {
           return (
             <button key={corte} className={`bob p-${pr}`} onClick={() => setConferir(corte)} aria-label={`Corte ${corte}: ${rot}, produção ${nv.l.toLowerCase()}, ${semEstoque ? 'sem' : 'com'} estoque`}>
               <b>{corte}</b>
-              <span className="nivel" aria-hidden="true">{[1, 2, 3, 4].map((i) => <i key={i} className={i <= nv.barras ? 'on' : ''} />)}</span>
+              <span className="rolos"><BobinaIcone nivel={semEstoque ? undefined : 'bastante'} /><BobinaIcone nivel={nv.k} /></span>
               <span>{rot}</span>
             </button>
           );
         })}
       </div>
-      <p className="hint" style={{ margin: '-6px 2px 0' }}>Toque na bobina para conferir: se tem a do estoque e quanto resta na da produção (os tracinhos). {ultima ? `Última conferência: ${fmtData(ultima.slice(0, 10))}.` : ''}</p>
+      <p className="hint" style={{ margin: '-6px 2px 0' }}>Toque na bobina para conferir: a 1ª bobina é a do estoque (tracejada = não tem) e a 2ª é a da produção, que vai afinando conforme acaba. {ultima ? `Última conferência: ${fmtData(ultima.slice(0, 10))}.` : ''}</p>
 
       {(lista.urgente.length > 0 || lista.repor.length > 0 || lista.olho.length > 0) && (
         <div className="card list">
