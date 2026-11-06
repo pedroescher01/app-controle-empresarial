@@ -9,6 +9,7 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 - Publica o conteúdo de `app/dist/` (com `.nojekyll`) no branch `gh-pages`.
 - Endereço: https://pedroescher01.github.io/app-controle-empresarial/
 - O app confere `versao.json` ao abrir/voltar e se atualiza sozinho.
+- Depois do push no gh-pages, CONFERIR que o "pages build and deployment" terminou com sucesso (mcp github actions_list). Ele já falhou sozinho e o celular ficou na versão velha; se falhar, publicar de novo.
 
 ## Nuvem (Supabase)
 - Projeto `calhas-andrade` (ref `mwaymuqftixvyhwqtrzs`, São Paulo), conta do e-mail calhasandradeararas@gmail.com.
