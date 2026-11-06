@@ -204,7 +204,10 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   ln(37.2, sigY, 190.6, sigY);
   ln(228.9, sigY, 382.4, sigY);
   center('Calhas Andrade', 37.2, 190.6, sigY + 7);
+  // nome comprido: diminui a letra (até 7,5) antes de cortar
+  for (let t = FS; t >= 7.5 && doc.getTextWidth(d.assinaturaCliente) > 150; t -= 0.3) doc.setFontSize(t);
   center(fit(d.assinaturaCliente, 150), 228.9, 382.4, sigY + 7);
+  doc.setFontSize(FS);
 
   return doc;
 }
