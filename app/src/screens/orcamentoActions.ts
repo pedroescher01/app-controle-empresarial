@@ -2,6 +2,7 @@ import { db, getConfig, novoNumeroOrcamento, type Cliente, type Lancamento, type
 import { addDias, hojeISO, uid } from '../lib/format';
 import { enderecoTexto } from '../lib/calc';
 import { DIRETO_CALHEIRO } from '../lib/catalog';
+import { taxaPct } from '../lib/taxas';
 import { juntar } from '../lib/juntar';
 
 /** Cria o orçamento já completo numa gravação só (a tela nunca abre com ele pela metade). */
@@ -42,7 +43,7 @@ export async function criarOrcamento(cliente?: Cliente | null, extra: Partial<Or
 export async function registrarPagamento(orc: Orcamento, p: Omit<Pagamento, 'id'>, parcelas: number) {
   const pag: Pagamento = { ...p, id: uid() };
   const cfg = await getConfig();
-  const pct = p.forma === 'Cartão de crédito' ? cfg.taxaCredito : p.forma === 'Cartão de débito' ? cfg.taxaDebito : 0;
+  const pct = p.cartao ? taxaPct(p.forma, p.cartao, cfg.taxasCartao) ?? 0 : p.forma === 'Cartão de crédito' ? cfg.taxaCredito : p.forma === 'Cartão de débito' ? cfg.taxaDebito : 0;
   const lanc: Lancamento = {
     id: uid(),
     tipo: 'entrada',
@@ -55,6 +56,7 @@ export async function registrarPagamento(orc: Orcamento, p: Omit<Pagamento, 'id'
     orcamentoId: orc.id,
     pagamentoId: pag.id,
     taxa: pct ? Math.round(p.valor * pct) / 100 : undefined,
+    cartao: p.cartao,
     criadoEm: new Date().toISOString(),
   };
   await db.transaction('rw', db.orcamentos, db.lancamentos, async () => {

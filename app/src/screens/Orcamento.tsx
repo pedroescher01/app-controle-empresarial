@@ -11,6 +11,8 @@ import { compartilharArquivo } from '../lib/share';
 import { novoCliente } from './Clientes';
 import { DescontoMaterial } from './Calheiro';
 import { PixSheet } from '../components/PixSheet';
+import { CARTAO_PADRAO, CartaoCampos, ehCartao } from '../components/CartaoCampos';
+import { taxaPct, type Cartao } from '../lib/taxas';
 import { sugestoes as sugestoesMaterial } from '../lib/adiantamento';
 
 const ITEM_LIVRE: CatalogItem = { key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' };
@@ -467,14 +469,16 @@ function ItemSheet({ open, item, novo, onClose, onSave, onRemove }: { open: bool
 }
 
 // ---------------- pagamento ----------------
-function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave, calheirosOrc, maoDeObra }: { open: boolean; onClose: () => void; saldo: number; parcelasAtuais: number; feitos: number; onSave: (p: { data: string; valor: number; forma: string; conta: string }, parcelas: number) => void; calheirosOrc: Calheiro[]; maoDeObra: number }) {
+function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave, calheirosOrc, maoDeObra }: { open: boolean; onClose: () => void; saldo: number; parcelasAtuais: number; feitos: number; onSave: (p: { data: string; valor: number; forma: string; conta: string; cartao?: Cartao }, parcelas: number) => void; calheirosOrc: Calheiro[]; maoDeObra: number }) {
   const [valor, setValor] = useState<number | null>(saldo);
   const [data, setData] = useState(hojeISO());
   const [forma, setForma] = useState('Pix');
   const [conta, setConta] = useState('Sicoob');
   const [parcelas, setParcelas] = useState(Math.max(parcelasAtuais, feitos + 1));
-  useEffect(() => { if (open) { setValor(saldo); setData(hojeISO()); setForma('Pix'); setConta('Sicoob'); setParcelas(Math.max(parcelasAtuais, feitos + 1)); } }, [open, saldo, parcelasAtuais, feitos]);
-  const ok = (valor ?? 0) > 0 && data && (valor ?? 0) <= saldo + 0.004;
+  const [cartao, setCartao] = useState<Cartao>(CARTAO_PADRAO);
+  const cfgP = useConfig();
+  useEffect(() => { if (open) { setCartao(CARTAO_PADRAO); setValor(saldo); setData(hojeISO()); setForma('Pix'); setConta('Sicoob'); setParcelas(Math.max(parcelasAtuais, feitos + 1)); } }, [open, saldo, parcelasAtuais, feitos]);
+  const ok = (valor ?? 0) > 0 && data && (valor ?? 0) <= saldo + 0.004 && (!ehCartao(forma) || taxaPct(forma, cartao, cfgP.taxasCartao) != null);
   const direto = forma === DIRETO_CALHEIRO;
   const formas = calheirosOrc.length ? [...FORMAS_PAGAMENTO, DIRETO_CALHEIRO] : FORMAS_PAGAMENTO;
   const escolher = (f: string) => {
@@ -491,6 +495,7 @@ function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave, 
       <div className="field"><span className="label">Forma</span>
         <div className="chips" style={{ flexWrap: 'wrap', margin: 0, padding: 0 }}>{formas.map((f) => <button key={f} className="chip" aria-pressed={forma === f} onClick={() => escolher(f)}>{f}</button>)}</div>
       </div>
+      <CartaoCampos forma={forma} cartao={cartao} onChange={setCartao} valor={valor ?? 0} tabela={cfgP.taxasCartao} />
       <div className="grid2">
         {direto
           ? <div className="field"><label htmlFor="p-c">Para qual calheiro</label><select id="p-c" className="input" value={conta} onChange={(e) => setConta(e.target.value)}>{calheirosOrc.map((c) => <option key={c.id}>{c.nome}</option>)}</select></div>
@@ -498,7 +503,7 @@ function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave, 
         <div className="field"><label htmlFor="p-n">Em quantas parcelas</label><select id="p-n" className="input" value={parcelas} onChange={(e) => setParcelas(Number(e.target.value))}>{Array.from({ length: 12 }, (_, i) => i + 1).filter((n) => n > feitos).map((n) => <option key={n} value={n}>{n === 1 ? 'À vista (1x)' : `${n}x`}</option>)}</select></div>
       </div>
       <p className="hint" style={{ margin: 0 }}>Vai ser a parcela {feitos + 1} de {parcelas}. {direto ? `O cliente pagou direto ao ${conta}: conta como pago no orçamento, mas NÃO entra no seu financeiro.` : 'O pagamento entra sozinho no financeiro.'}</p>
-      <button className="btn block primary" disabled={!ok} onClick={() => onSave({ valor: valor ?? 0, data, forma, conta }, parcelas)}><Icon name="check" />Registrar {valor ? brl(valor) : ''}</button>
+      <button className="btn block primary" disabled={!ok} onClick={() => onSave({ valor: valor ?? 0, data, forma, conta, ...(ehCartao(forma) ? { cartao } : {}) }, parcelas)}><Icon name="check" />Registrar {valor ? brl(valor) : ''}</button>
     </Sheet>
   );
 }

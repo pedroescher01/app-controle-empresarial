@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { TAXAS_PADRAO, type Cartao, type TabelaTaxas } from './taxas';
 
 export type Endereco = {
   id: string;
@@ -44,7 +45,7 @@ export type Item = {
   condutor?: boolean;
 };
 
-export type Pagamento = { id: string; data: string; valor: number; forma: string; conta: string };
+export type Pagamento = { id: string; data: string; valor: number; forma: string; conta: string; cartao?: Cartao };
 
 export type StatusOrc = 'rascunho' | 'enviado' | 'aprovado' | 'recusado';
 
@@ -183,6 +184,8 @@ export type Lancamento = {
   referencia?: string;
   /** pedido de compra pago com este lançamento */
   pedidoId?: string;
+  /** cartão: maquininha ou link, bandeira e parcelas (para a taxa) */
+  cartao?: Cartao;
   criadoEm: string;
 };
 
@@ -224,6 +227,8 @@ export type Config = {
   pixCidade: string;
   /** mostrar o QR do Pix no PDF do orçamento (quando falta pagar) */
   pixNoPdf: boolean;
+  /** tabela de taxas da InfinitePay por bandeira e parcelas */
+  taxasCartao: TabelaTaxas;
 };
 
 export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';
@@ -245,6 +250,7 @@ export const CONFIG_PADRAO: Config = {
   pixNome: '',
   pixCidade: 'Araras',
   pixNoPdf: false,
+  taxasCartao: TAXAS_PADRAO,
 };
 
 type ConfigRow = { key: string; value: Config };

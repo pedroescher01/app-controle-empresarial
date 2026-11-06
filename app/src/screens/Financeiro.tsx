@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db, setConfig, type ContaFixa, type Lancamento } from '../lib/db';
+import { db, type ContaFixa, type Lancamento } from '../lib/db';
 import { go } from '../lib/router';
 import { useConfig, useContasFixas, useLancamentos } from '../lib/hooks';
 import { CONTAS, FORMAS_PAGAMENTO, contaPadrao } from '../lib/catalog';
 import { CATEGORIAS_ENTRADA, CATEGORIAS_SAIDA, DIAS_SEMANA, doMes, hojeMes, liquido, nomeMesAno, resumo, somarMes, vencimentos, type Vencimento } from '../lib/financeiro';
-import { brl, fmtData, fmtDataCurta, hojeISO, parseDecimal, uid } from '../lib/format';
+import { brl, fmtData, fmtDataCurta, hojeISO, uid } from '../lib/format';
 import { Confirm, Empty, Icon, MoneyInput, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { compartilharArquivo } from '../lib/share';
 import { PixSheet } from '../components/PixSheet';
+import { CARTAO_PADRAO, CartaoCampos, ehCartao } from '../components/CartaoCampos';
+import { BANDEIRAS, cobrarParaReceber, taxaPct, valorTaxa, type Cartao } from '../lib/taxas';
 
 // ======================= MÊS =======================
 export function Financeiro({ mes: mesRota }: { mes?: string }) {
@@ -169,17 +171,19 @@ function LancamentoSheet({ tipo: tipoInicial, existente, onClose }: { tipo: 'ent
   const [categoria, setCategoria] = useState(existente?.categoria ?? (tipoInicial === 'entrada' ? 'Venda no balcão' : ''));
   const [forma, setForma] = useState(existente?.forma ?? 'Pix');
   const [conta, setConta] = useState(existente?.conta ?? 'Sicoob');
+  const [cartao, setCartao] = useState<Cartao>(existente?.cartao ?? CARTAO_PADRAO);
   const [apagar, setApagar] = useState(false);
   const doOrcamento = !!existente?.orcamentoId;
   const cats = tipo === 'entrada' ? CATEGORIAS_ENTRADA : CATEGORIAS_SAIDA;
   const ok = (valor ?? 0) > 0 && !!categoria && !!data;
 
   const salvar = async () => {
-    const pct = tipo === 'entrada' ? (forma === 'Cartão de crédito' ? cfg.taxaCredito : forma === 'Cartão de débito' ? cfg.taxaDebito : 0) : 0;
+    const pct = tipo === 'entrada' && ehCartao(forma) ? taxaPct(forma, cartao, cfg.taxasCartao) ?? 0 : 0;
     const l: Lancamento = {
       ...(existente ?? { id: uid(), criadoEm: new Date().toISOString() }),
       tipo, valor: valor ?? 0, data, descricao: descricao.trim(), categoria, forma, conta,
       taxa: pct ? Math.round((valor ?? 0) * pct) / 100 : undefined,
+      cartao: tipo === 'entrada' && ehCartao(forma) ? cartao : undefined,
     };
     await db.lancamentos.put(l);
     toast(`Anotado: ${tipo === 'entrada' ? 'entrada' : 'saída'} de ${brl(l.valor)} em ${fmtDataCurta(l.data)}${l.descricao ? `, ${l.descricao}` : ''}, ${l.forma}.`);
@@ -216,6 +220,7 @@ function LancamentoSheet({ tipo: tipoInicial, existente, onClose }: { tipo: 'ent
       <div className="field"><span className="label">Forma</span>
         <div className="chips" style={{ flexWrap: 'wrap', margin: 0, padding: 0 }}>{FORMAS_PAGAMENTO.map((f) => <button key={f} className="chip" aria-pressed={forma === f} onClick={() => { setForma(f); setConta(contaPadrao(f)); }}>{f}</button>)}</div>
       </div>
+      {tipo === 'entrada' && <CartaoCampos forma={forma} cartao={cartao} onChange={setCartao} valor={valor ?? 0} tabela={cfg.taxasCartao} />}
       <button className="btn block primary" disabled={!ok} onClick={salvar}><Icon name="check" />{existente ? 'Salvar' : `Lançar ${valor ? brl(valor) : ''}`}</button>
       {!categoria && (valor ?? 0) > 0 && <span className="hint" style={{ textAlign: 'center' }}>Escolha a categoria.</span>}
       {existente && <button className="btn block danger" onClick={() => setApagar(true)}><Icon name="trash" />Apagar lançamento</button>}
@@ -251,7 +256,6 @@ function PagarSheet({ v, onClose }: { v: Vencimento; onClose: () => void }) {
 // ======================= CONTAS FIXAS =======================
 export function ContasFixas() {
   const contas = useContasFixas();
-  const cfg = useConfig();
   const [edit, setEdit] = useState<ContaFixa | 'nova' | null>(null);
   const ordenadas = [...contas].sort((a, b) => Number(b.ativa) - Number(a.ativa) || a.descricao.localeCompare(b.descricao));
   const quando = (c: ContaFixa) => c.repete === 'mensal' ? `Todo dia ${c.dia}` : c.repete === 'semanal' ? `Toda ${DIAS_SEMANA[c.dia]}` : `Vence ${fmtData(c.vencimento)}`;
@@ -272,21 +276,10 @@ export function ContasFixas() {
         </div>
       )}
 
-      <div className="h2"><h2>Maquininha (InfinitePay)</h2></div>
-      <div className="card list">
-        <div className="kv" style={{ alignItems: 'center' }}><label className="k" htmlFor="tx-c">Taxa no crédito (%)</label><TaxaInput id="tx-c" value={cfg.taxaCredito} onChange={(taxaCredito) => setConfig({ taxaCredito })} /></div>
-        <div className="kv" style={{ alignItems: 'center' }}><label className="k" htmlFor="tx-d">Taxa no débito (%)</label><TaxaInput id="tx-d" value={cfg.taxaDebito} onChange={(taxaDebito) => setConfig({ taxaDebito })} /></div>
-      </div>
-      <p className="hint" style={{ margin: '-8px 2px 0' }}>As entradas no cartão mostram quanto caiu de verdade. Vale para os próximos pagamentos.</p>
+      <Calculadora />
       {edit && <ContaSheet conta={edit === 'nova' ? null : edit} onClose={() => setEdit(null)} />}
     </section>
   );
-}
-
-function TaxaInput({ id, value, onChange }: { id: string; value: number; onChange: (v: number) => void }) {
-  const [t, setT] = useState(value ? String(value).replace('.', ',') : '');
-  useEffect(() => setT(value ? String(value).replace('.', ',') : ''), [value]);
-  return <input id={id} className="input money num" inputMode="decimal" style={{ width: 110, textAlign: 'right', minHeight: 40, padding: '8px 10px' }} placeholder="0" value={t} onChange={(e) => setT(e.target.value.replace(/[^\d,.]/g, ''))} onBlur={() => onChange(Math.min(30, Math.max(0, parseDecimal(t))))} />;
 }
 
 function ContaSheet({ conta, onClose }: { conta: ContaFixa | null; onClose: () => void }) {
@@ -386,5 +379,33 @@ function RelatorioSheet({ tipo, chave, onClose }: { tipo: 'mes' | 'ano'; chave: 
         </>
       )}
     </Sheet>
+  );
+}
+
+/** Calculadora da maquininha: quanto cai e quanto cobrar para receber o valor cheio. */
+function Calculadora() {
+  const cfg = useConfig();
+  const [valor, setValor] = useState<number | null>(1000);
+  const [forma, setForma] = useState('Cartão de crédito');
+  const [cartao, setCartao] = useState<Cartao>({ ...CARTAO_PADRAO, parcelas: 3 });
+  const pct = taxaPct(forma, cartao, cfg.taxasCartao);
+  const v = valor ?? 0;
+  return (
+    <>
+      <div className="h2"><h2>Calculadora da maquininha</h2><span className="small faint">InfinitePay</span></div>
+      <div className="card form-card">
+        <div className="field"><label htmlFor="calc-v">Valor do serviço</label><MoneyInput id="calc-v" value={valor} onChange={setValor} allowEmpty /></div>
+        <Seg label="Tipo" value={forma} onChange={setForma} options={[{ value: 'Cartão de crédito', label: 'Crédito' }, { value: 'Cartão de débito', label: 'Débito' }]} />
+        <CartaoCampos forma={forma} cartao={cartao} onChange={setCartao} valor={0} tabela={cfg.taxasCartao} />
+        {pct != null && v > 0 && (
+          <div className="card list" style={{ boxShadow: 'none' }}>
+            <div className="kv"><span className="k">Taxa ({pct.toFixed(2).replace('.', ',')}%)</span><span className="v">{brl(valorTaxa(v, pct))}</span></div>
+            <div className="kv"><span className="k">Cobrando {brl(v)}, cai</span><span className="v" style={{ color: 'var(--ok)' }}>{brl(v - valorTaxa(v, pct))}</span></div>
+            <div className="kv total"><span className="k">Para cair {brl(v)}, cobre</span><span className="v">{brl(cobrarParaReceber(v, pct))}</span></div>
+          </div>
+        )}
+      </div>
+      <p className="hint" style={{ margin: '-8px 2px 0' }}>Taxas da tabela da InfinitePay ({BANDEIRAS.map((b) => b.l).join(', ')}; link de pagamento). Se mudarem, me mande a tabela nova.</p>
+    </>
   );
 }
