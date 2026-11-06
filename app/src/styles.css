@@ -287,3 +287,8 @@ body.kb .toast { top: calc(var(--vv-top, 0px) + var(--vv-h, 100vh) - 70px); }
 .etapa .num-et svg { width: 15px; height: 15px; }
 .etapa .btns { grid-template-columns: 1.4fr 1fr; }
 a.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/* caixa de marcar */
+.check { width: 24px; height: 24px; border-radius: 7px; border: 2px solid var(--line-strong); display: grid; place-items: center; flex: none; }
+.check.on { background: var(--red); border-color: var(--red); color: #fff; }
+.check svg { width: 15px; height: 15px; }

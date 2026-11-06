@@ -92,6 +92,7 @@ export type StatusVisual = { rotulo: string; cor: 'mute' | 'info' | 'warn' | 'ok
 
 export function statusVisual(orc: Orcamento, total: number): StatusVisual {
   const { situacao } = resumoPagamentos(orc, total);
+  if (orc.juntadoNo) return { rotulo: 'Juntado', cor: 'mute', chave: 'juntado' };
   if (orc.pagamentos.length && situacao === 'quitado') return { rotulo: 'Quitado', cor: 'ok', chave: 'quitado' };
   if (orc.pagamentos.length) return { rotulo: 'Pago em parte', cor: 'warn', chave: 'receber' };
   switch (orc.status) {

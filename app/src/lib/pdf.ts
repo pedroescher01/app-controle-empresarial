@@ -165,7 +165,13 @@ export function gerarPDF(d: PDFDados, a: PDFAssets): jsPDF {
   // ---------- observações ----------
   const oTop = sTop + 30.9 + 8;
   const maxW = R - 22.8 - 6;
-  const linhas = d.observacoes.flatMap((t) => doc.splitTextToSize(t, maxW) as string[]);
+  // na linha de quitação: "orçamento quitado." nunca quebra no meio e sobra espaço para o selo P.G
+  const selo = doc.getTextWidth('P.G') + 14;
+  const linhas = d.observacoes.flatMap((t, i) => {
+    const ultima = d.quitado && i === d.observacoes.length - 1;
+    const txt = ultima ? t.replace('orçamento quitado.', 'orçamento\u00a0quitado.') : t;
+    return (doc.splitTextToSize(txt, ultima ? maxW - selo : maxW) as string[]).map((l) => l.replace(/\u00a0/g, ' '));
+  });
   const oH = Math.max(79.1, 15.4 + 3.5 + linhas.length * 12.05 + 6);
   bx(M, oTop, R - M, oH);
   ln(M, oTop + 15.4, R, oTop + 15.4);

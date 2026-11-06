@@ -158,7 +158,10 @@ Respostas do Pedro, guardadas aqui para não se perderem. Atualizado a cada roda
 - **74a.** Nota da Galvisa vem com preço **por kg**.
 - **83a.** Taxa da maquininha: varia; Pedro informa depois. Campo editável em Configurações.
 
+## Situação (06/11/2026)
+Pronto e publicado: orçamentos (PDF oficial, pagamentos, juntar), clientes, calheiros, visitas e agenda,
+financeiro (contas fixas, maquininha, relatórios), bobinas, fornecedores e pedidos de compra, PIN + Face ID, backup.
+
 ## Pendências
-- Confirmar banco de dados: Supabase (plano grátis).
-- Taxas da InfinitePay.
-- Código `gerar_orcamento.py` (se for encontrado).
+- Supabase (dados na nuvem + notificações no celular): bloqueado por fatura em aberto na conta do Supabase.
+- Taxas da InfinitePay: o Pedro vai informar (campo em Mais → Contas fixas e maquininha).

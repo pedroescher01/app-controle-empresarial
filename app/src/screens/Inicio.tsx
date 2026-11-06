@@ -30,10 +30,11 @@ export function Inicio() {
       const r = calcular(o, cfg);
       return { o, total: r.total, st: statusVisual(o, r.total), pg: resumoPagamentos(o, r.total) };
     });
-    const aReceber = ls.filter((l) => (l.o.status === 'aprovado' || l.o.pagamentos.length) && l.pg.saldo > 0);
-    const semResposta = ls.filter((l) => l.o.status === 'enviado' && !l.o.pagamentos.length && diasEntre(l.o.enviadoEm ?? l.o.emitidoEm, hoje) >= 5);
-    const rascunhos = ls.filter((l) => l.o.status === 'rascunho');
-    const orcadoMes = ls.filter((l) => l.o.emitidoEm.startsWith(mesISO) && l.o.status !== 'rascunho').reduce((s, l) => s + l.total, 0);
+    const vivos = ls.filter((l) => !l.o.juntadoNo);
+    const aReceber = vivos.filter((l) => (l.o.status === 'aprovado' || l.o.pagamentos.length) && l.pg.saldo > 0);
+    const semResposta = vivos.filter((l) => l.o.status === 'enviado' && !l.o.pagamentos.length && diasEntre(l.o.enviadoEm ?? l.o.emitidoEm, hoje) >= 5);
+    const rascunhos = vivos.filter((l) => l.o.status === 'rascunho');
+    const orcadoMes = vivos.filter((l) => l.o.emitidoEm.startsWith(mesISO) && l.o.status !== 'rascunho').reduce((s, l) => s + l.total, 0);
     return { ls, aReceber, semResposta, rascunhos, orcadoMes, totalReceber: aReceber.reduce((s, l) => s + l.pg.saldo, 0) };
   }, [orcs, cfg, hoje, mesISO]);
 

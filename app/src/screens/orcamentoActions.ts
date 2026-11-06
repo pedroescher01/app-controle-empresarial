@@ -1,8 +1,10 @@
 import { db, getConfig, novoNumeroOrcamento, type Cliente, type Lancamento, type Orcamento, type Pagamento, type Visita } from '../lib/db';
 import { addDias, hojeISO, uid } from '../lib/format';
 import { enderecoTexto } from '../lib/calc';
+import { juntar } from '../lib/juntar';
 
-export async function criarOrcamento(cliente?: Cliente | null): Promise<Orcamento> {
+/** Cria o orçamento já completo numa gravação só (a tela nunca abre com ele pela metade). */
+export async function criarOrcamento(cliente?: Cliente | null, extra: Partial<Orcamento> = {}): Promise<Orcamento> {
   const cfg = await getConfig();
   const hoje = hojeISO();
   const agora = new Date().toISOString();
@@ -30,6 +32,7 @@ export async function criarOrcamento(cliente?: Cliente | null): Promise<Orcament
     criadoEm: agora,
     atualizadoEm: agora,
   };
+  Object.assign(o, extra);
   await db.orcamentos.add(o);
   return o;
 }
@@ -82,15 +85,46 @@ export async function apagarOrcamento(orc: Orcamento) {
 /** Orçamento novo já com cliente, endereço, telefone e calheiro da visita; liga a visita ao orçamento. */
 export async function criarOrcamentoDaVisita(v: Visita): Promise<Orcamento> {
   const cliente = v.clienteId ? (await db.clientes.get(v.clienteId)) ?? null : null;
-  const o = await criarOrcamento(cliente);
-  const patch: Partial<Orcamento> = {
+  const e = cliente?.enderecos.find((x) => enderecoTexto(x));
+  const o = await criarOrcamento(cliente, {
     clienteId: cliente?.id ?? null,
     clienteNome: cliente?.nome ?? v.nome,
-    telefone: v.telefone || o.telefone,
-    endereco: v.endereco || o.endereco,
+    telefone: v.telefone || (cliente ? cliente.telefone || cliente.telefone2 : ''),
+    endereco: v.endereco || (e ? enderecoTexto(e) : ''),
     calheiroIds: v.calheiroId ? [v.calheiroId] : [],
-  };
-  await db.orcamentos.update(o.id, patch);
+  });
   await db.visitas.update(v.id, { orcamentoId: o.id, status: 'medido', medidoEm: v.medidoEm ?? hojeISO(), atualizadoEm: new Date().toISOString() });
-  return { ...o, ...patch };
+  return o;
+}
+
+/** Junta orçamentos num novo (emitido hoje). Os antigos ficam marcados como "Juntado". */
+export async function juntarOrcamentos(orcs: Orcamento[]): Promise<Orcamento> {
+  const cfg = await getConfig();
+  const recente = [...orcs].sort((a, b) => b.emitidoEm.localeCompare(a.emitidoEm))[0];
+  const cliente = recente.clienteId ? (await db.clientes.get(recente.clienteId)) ?? null : null;
+  const j = juntar(orcs, cfg);
+  const patch: Partial<Orcamento> = {
+    clienteId: recente.clienteId,
+    clienteNome: recente.clienteNome,
+    telefone: orcs.find((o) => o.telefone)?.telefone ?? '',
+    endereco: recente.endereco,
+    calheiroIds: j.calheiroIds,
+    itens: j.itens,
+    desconto: j.desconto,
+    observacoes: j.observacao,
+    modo: orcs.every((o) => o.modo === 'detalhado') ? 'detalhado' : 'simples',
+  };
+  const novo = await criarOrcamento(cliente, patch);
+  await db.transaction('rw', db.orcamentos, async () => {
+    for (const o of orcs) await db.orcamentos.update(o.id, { juntadoNo: novo.id, atualizadoEm: new Date().toISOString() });
+  });
+  return novo;
+}
+
+/** Desfaz a junção: apaga o orçamento novo e libera os antigos. */
+export async function separarJuncao(novo: Orcamento) {
+  await db.transaction('rw', db.orcamentos, async () => {
+    await db.orcamentos.where('id').anyOf((await db.orcamentos.toArray()).filter((o) => o.juntadoNo === novo.id).map((o) => o.id)).modify({ juntadoNo: null });
+    await db.orcamentos.delete(novo.id);
+  });
 }

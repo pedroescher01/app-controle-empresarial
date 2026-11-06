@@ -69,7 +69,7 @@ export function ClienteDetalhe({ id }: { id: string }) {
   if (!cliente) return <Empty icon="users" title="Cliente não encontrado" action={<button className="btn" onClick={() => go('clientes')}>Voltar</button>} />;
 
   const totais = orcs.map((o) => ({ o, r: calcular(o, cfg) }));
-  const fechado = totais.filter(({ o }) => o.status === 'aprovado' || o.pagamentos.length).reduce((s, { r }) => s + r.total, 0);
+  const fechado = totais.filter(({ o }) => !o.juntadoNo).filter(({ o }) => o.status === 'aprovado' || o.pagamentos.length).reduce((s, { r }) => s + r.total, 0);
   const tel = cliente.telefone || cliente.telefone2;
 
   return (

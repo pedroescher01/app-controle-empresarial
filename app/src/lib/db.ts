@@ -73,6 +73,8 @@ export type Orcamento = {
   /** serviço agendado (instalação) */
   servicoData?: string | null;
   servicoPeriodo?: Periodo | null;
+  /** este orçamento foi juntado em outro (id do orçamento novo) */
+  juntadoNo?: string | null;
   criadoEm: string;
   atualizadoEm: string;
 };

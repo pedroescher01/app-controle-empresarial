@@ -28,12 +28,15 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 3. **Ícones**: desenhar com cuidado e conferir ampliado. Logos de marcas (WhatsApp) vetorizados do original, nunca à mão.
 4. **PDF**: linhas internas da grade finas (0,5pt, cinza escuro) e coordenadas alinhadas; borda externa 0,8pt preta.
    Senão algumas linhas parecem grossas na tela do celular.
-5. **Observações do PDF**: "valor à vista" some depois do 1º pagamento (fica salvo no sistema); uma linha por parcela,
+5. **Observações do PDF**: "orçamento quitado." nunca quebra no meio e sempre sobra espaço para o selo P.G.
+    "valor à vista" some depois do 1º pagamento (fica salvo no sistema); uma linha por parcela,
    sem linha repetida de "Total pago"; quitado = "orçamento quitado." + selo P.G na última parcela; nunca "1 de 1" com saldo.
 6. **Quadro vazio / botão "Adicionar item"** abrem direto a tela de **digitar** item (não a lista).
 7. Ler com atenção o que o Pedro pede (ex.: "abrir a tela de digitar" ≠ "abrir a lista"). Na dúvida, perguntar.
 8. **Ordenar por data sempre com desempate** (ex.: número do pedido). Duas coisas no mesmo dia já inverteram "subiu"/"caiu".
-9. Toda tabela nova entra em `TABELAS_DADOS` (db.ts) para ir no backup, e no `DadosProvider`.
+9. **Criar registro completo numa gravação só** (ex.: `criarOrcamento(cliente, extra)`). Criar vazio e completar depois
+   fez a tela abrir o orçamento em branco (aconteceu ao juntar orçamentos).
+9b. Toda tabela nova entra em `TABELAS_DADOS` (db.ts) para ir no backup, e no `DadosProvider`.
 10. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
 
 ## Checklist antes de publicar qualquer mudança

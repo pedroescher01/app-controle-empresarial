@@ -6,7 +6,7 @@ import { CATALOGO, CONTAS, CORTES, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, prec
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
 import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
-import { apagarOrcamento, apagarPagamento, registrarPagamento } from './orcamentoActions';
+import { apagarOrcamento, apagarPagamento, registrarPagamento, separarJuncao } from './orcamentoActions';
 import { compartilharArquivo } from '../lib/share';
 import { novoCliente } from './Clientes';
 
@@ -28,7 +28,9 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   ref.current = o;
 
   // pagamentos mudam por fora do editor (folha de pagamento) → acompanha o banco
-  const doBanco = useOrcamentos().find((x) => x.id === inicial.id);
+  const todos = useOrcamentos();
+  const doBanco = todos.find((x) => x.id === inicial.id);
+  const origens = todos.filter((x) => x.juntadoNo === inicial.id);
   useEffect(() => {
     if (doBanco && doBanco.pagamentos.length !== ref.current.pagamentos.length) setO((x) => ({ ...x, pagamentos: doBanco.pagamentos, parcelas: doBanco.parcelas, status: doBanco.status, aprovadoEm: doBanco.aprovadoEm }));
   }, [doBanco]);
@@ -61,7 +63,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   const pag = resumoPagamentos(o, r.total);
   const st = statusVisual(o, r.total);
 
-  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro' | 'add'>(null);
+  const [sheet, setSheet] = useState<null | 'cliente' | 'item' | 'pagamento' | 'pdf' | 'apagar' | 'calheiro' | 'add' | 'separar'>(null);
   const [itemEdit, setItemEdit] = useState<Item | null>(null);
   const fechar = useCallback(() => setSheet(null), []);
 
@@ -94,6 +96,24 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         title={o.clienteNome || 'Novo orçamento'}
         right={<Pill cor={st.cor}>{st.rotulo}</Pill>}
       />
+
+      {o.juntadoNo && (() => {
+        const destino = todos.find((x) => x.id === o.juntadoNo);
+        return (
+          <div className="card row" style={{ background: 'var(--warn-soft)', borderColor: 'transparent' }}>
+            <div className="ic warn"><Icon name="copy" /></div>
+            <div className="main"><div className="t" style={{ whiteSpace: 'normal' }}>Este orçamento foi juntado{destino ? ` no nº ${destino.numero}` : ''}</div><div className="s">Ele fica guardado só para consulta.</div></div>
+            {destino && <a className="btn" href={`#/orcamento/${destino.id}`}>Abrir</a>}
+          </div>
+        );
+      })()}
+      {origens.length > 0 && (
+        <div className="card row" style={{ background: 'var(--info-soft)', borderColor: 'transparent' }}>
+          <div className="ic info"><Icon name="copy" /></div>
+          <div className="main"><div className="t" style={{ whiteSpace: 'normal' }}>Junção de {origens.length} orçamentos</div><div className="s">{origens.map((x) => `nº ${x.numero}`).join(', ')}</div></div>
+          {!o.pagamentos.length && <button className="btn" onClick={() => setSheet('separar')}>Separar</button>}
+        </div>
+      )}
 
       {/* cliente */}
       <button className="card row" onClick={() => setSheet('cliente')} style={{ padding: 14 }}>
@@ -252,6 +272,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
       <PagamentoSheet open={sheet === 'pagamento'} onClose={fechar} saldo={pag.saldo} parcelasAtuais={o.parcelas} feitos={o.pagamentos.length} onSave={async (p, parcelas) => { await registrarPagamento({ ...o, pagamentos: doBanco?.pagamentos ?? o.pagamentos }, p, parcelas); fechar(); toast(`Anotado: ${brl(p.valor)} em ${fmtData(p.data)}, ${p.forma}`); }} />
       <PdfSheet open={sheet === 'pdf'} onClose={fechar} orc={o} calheiros={calheiros} quitado={pag.situacao === 'quitado' && o.pagamentos.length > 0} onEnviado={() => { if (o.status === 'rascunho') set({ status: 'enviado', enviadoEm: hojeISO() }); }} />
       <CalheiroRapido open={sheet === 'calheiro'} onClose={fechar} onCriado={(c) => set({ calheiroIds: [...o.calheiroIds, c.id] })} />
+      <Confirm open={sheet === 'separar'} onClose={fechar} title="Separar de novo?" text={`Este orçamento junto (nº ${o.numero}) será apagado e os ${origens.length} orçamentos antigos voltam ao normal.`} confirmLabel="Separar" onConfirm={async () => { apagado.current = true; window.clearTimeout(timer.current); await separarJuncao(o); toast('Orçamentos separados de novo'); replace('orcamentos'); }} />
       <Confirm open={sheet === 'apagar'} onClose={fechar} title={`Apagar o orçamento nº ${o.numero}?`} text={o.pagamentos.length ? 'Os pagamentos dele também saem do financeiro. Não dá para desfazer.' : 'Não dá para desfazer.'} confirmLabel="Apagar" danger onConfirm={async () => { apagado.current = true; window.clearTimeout(timer.current); await apagarOrcamento(o); toast('Orçamento apagado'); replace('orcamentos'); }} />
     </section>
   );

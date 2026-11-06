@@ -12,6 +12,7 @@ import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
 import { VisitaForm, VisitasLista } from './screens/Visitas';
 import { ContasFixas, Financeiro, FinanceiroAno } from './screens/Financeiro';
 import { Bobinas, Fornecedores, PedidoTela, PrecoKg } from './screens/Bobinas';
+import { Juntar } from './screens/Juntar';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -121,6 +122,7 @@ function Shell({ onLock }: { onLock: () => void }) {
     case 'visitas': tela = <VisitasLista aba={b ?? ''} />; aba = 'visitas'; break;
     case 'visita': tela = b === 'nova' ? <VisitaForm /> : <VisitaForm id={b} />; aba = 'visitas'; break;
     case 'orcamentos': tela = <OrcamentosLista />; aba = 'orcamentos'; break;
+    case 'juntar': tela = <Juntar />; aba = 'orcamentos'; break;
     case 'financeiro':
       aba = 'financeiro';
       tela = b === 'contas' ? <ContasFixas /> : b === 'ano' ? <FinanceiroAno ano={c} /> : <Financeiro mes={b === 'mes' ? c : undefined} />;

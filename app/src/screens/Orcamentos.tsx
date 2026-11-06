@@ -5,6 +5,7 @@ import { brl, fmtData, semAcento } from '../lib/format';
 import { go } from '../lib/router';
 import { Empty, Icon, Pill, TopBar } from '../components/ui';
 import { criarOrcamento } from './orcamentoActions';
+import { chaveCliente, podeJuntar } from '../lib/juntar';
 
 const FILTROS = [
   { k: 'todos', l: 'Todos' },
@@ -13,6 +14,7 @@ const FILTROS = [
   { k: 'quitado', l: 'Quitados' },
   { k: 'rascunho', l: 'Rascunhos' },
   { k: 'recusado', l: 'Recusados' },
+  { k: 'juntado', l: 'Juntados' },
 ];
 
 export async function novoOrcamento() {
@@ -37,6 +39,12 @@ export function OrcamentosLista() {
     return c;
   }, [linhas]);
 
+  const podeAlgum = useMemo(() => {
+    const n = new Map<string, number>();
+    orcs.filter(podeJuntar).forEach((o) => n.set(chaveCliente(o), (n.get(chaveCliente(o)) ?? 0) + 1));
+    return [...n.values()].some((v) => v >= 2);
+  }, [orcs]);
+
   const lista = useMemo(() => {
     const t = semAcento(q.trim());
     return linhas.filter(({ o, st }) => (f === 'todos' || st.chave === f) && (!t || String(o.numero).includes(t) || semAcento(o.clienteNome).includes(t)));
@@ -56,6 +64,7 @@ export function OrcamentosLista() {
           </button>
         ))}
       </div>
+      {podeAlgum && <a className="btn block ghost" href="#/juntar" style={{ marginTop: -6 }}><Icon name="copy" />Juntar orçamentos do mesmo cliente</a>}
       {!orcs.length ? (
         <Empty icon="doc" title="Nenhum orçamento ainda" text="Crie o primeiro. Ele vai direto em PDF para o WhatsApp do cliente." action={<button className="btn primary" onClick={novoOrcamento}><Icon name="plus" />Novo orçamento</button>} />
       ) : !lista.length ? (
