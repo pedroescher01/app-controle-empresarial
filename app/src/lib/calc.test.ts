@@ -68,6 +68,16 @@ describe('textos', () => {
     const o = orc({ parcelas: 1, valorAVista: 1000, pagamentos: [{ id: 'p', data: '2026-11-05', valor: 300, forma: 'Pix', conta: 'Sicoob' }] });
     expect(linhasObservacoes(o, 1120).linhas).toEqual(['Parcela 1 de 2 - paga em 05/11/2026 - R$ 300,00 (Pix) - falta R$ 820,00']);
   });
+  it('mão de obra paga direto ao calheiro aparece com o nome dele', () => {
+    const o = orc({ parcelas: 2, pagamentos: [
+      { id: 'a', data: '2026-11-10', valor: 1230, forma: 'Pix', conta: 'Sicoob' },
+      { id: 'b', data: '2026-11-12', valor: 1100, forma: 'Direto ao calheiro', conta: 'Marquinhos' },
+    ] });
+    expect(linhasObservacoes(o, 2330).linhas).toEqual([
+      'Parcela 1 de 2 - paga em 10/11/2026 - R$ 1.230,00 (Pix) - falta R$ 1.100,00',
+      'Parcela 2 de 2 - paga em 12/11/2026 - R$ 1.100,00 (direto ao Marquinhos) - orçamento quitado.',
+    ]);
+  });
   it('à vista aparece só antes de pagar', () => {
     expect(linhasObservacoes(orc({ valorAVista: 1000 }), 1120).linhas).toEqual(['Em caso de pagamento à vista, o valor será R$ 1.000,00.']);
   });

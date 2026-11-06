@@ -44,6 +44,9 @@ export const CORTES = [10, 15, 18, 20, 22, 25, 28, 30, 33, 35, 40, 45, 50, 55, 6
 export const UNIDADES = ['m', 'un', 'par', 'barra', 'kg', 'cx'];
 
 export const FORMAS_PAGAMENTO = ['Pix', 'Dinheiro', 'Cartão de crédito', 'Cartão de débito', 'Transferência', 'Boleto', 'Cheque'];
+/** Pagamento que o cliente fez direto ao calheiro (mão de obra): não entra no financeiro da Calhas Andrade. */
+export const DIRETO_CALHEIRO = 'Direto ao calheiro';
+
 export const CONTAS = ['Sicoob', 'InfinitePay', 'Caixa (dinheiro)'];
 
 export function contaPadrao(forma: string) {

@@ -51,7 +51,9 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 9a. **Tabela nova + nuvem:** o app busca tudo de novo quando a lista `TABELAS_DADOS` muda (versão antiga pode ter pulado
    registros da tabela nova). Publicar o app ANTES de gravar dados da tabela nova direto na nuvem.
 9b. Toda tabela nova entra em `TABELAS_DADOS` (db.ts) para ir no backup, e no `DadosProvider`.
-10. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
+10. **Tela aberta não pode regravar por cima da nuvem.** O editor só grava quando o Pedro mexe (`pendente`) e adota a
+   versão do banco quando ela muda por fora. Antes disso, uma mudança feita direto na nuvem foi perdida.
+11. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
 
 ## Checklist antes de publicar qualquer mudança
 - `npx tsc -b`, `npx vitest run`, `npx eslint src` sem erros.

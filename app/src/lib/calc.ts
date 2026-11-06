@@ -1,6 +1,6 @@
 import type { Config, Item, Orcamento, Calheiro } from './db';
 import { r2, fmtData, dec2, hojeISO } from './format';
-import { formaCurta } from './catalog';
+import { DIRETO_CALHEIRO, formaCurta } from './catalog';
 
 type Precos = Pick<Config, 'precoMetro' | 'fatorChapa24'>;
 
@@ -151,7 +151,7 @@ export function linhasObservacoes(orc: Orcamento, total: number) {
       acumulado = r2(acumulado + p.valor);
       const falta = r2(Math.max(0, total - acumulado));
       const fim = quitado && i === pags.length - 1 ? 'orçamento quitado.' : `falta R$ ${dec2(falta)}`;
-      linhas.push(`Parcela ${i + 1} de ${n} - paga em ${fmtData(p.data)} - R$ ${dec2(p.valor)} (${formaCurta(p.forma)}) - ${fim}`);
+      linhas.push(`Parcela ${i + 1} de ${n} - paga em ${fmtData(p.data)} - R$ ${dec2(p.valor)} (${p.forma === DIRETO_CALHEIRO ? `direto ao ${p.conta}` : formaCurta(p.forma)}) - ${fim}`);
     });
   }
   return { linhas, quitado };

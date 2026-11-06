@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { db, type Calheiro, type Cliente, type Item, type Orcamento, type StatusOrc } from '../lib/db';
 import { go, replace } from '../lib/router';
 import { useAdiantamentos, useCalheiros, useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
-import { CATALOGO, CONTAS, CORTES, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
+import { CATALOGO, CONTAS, CORTES, DIRETO_CALHEIRO, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
 import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
@@ -34,24 +34,38 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   const todos = useOrcamentos();
   const doBanco = todos.find((x) => x.id === inicial.id);
   const origens = todos.filter((x) => x.juntadoNo === inicial.id);
-  useEffect(() => {
-    if (doBanco && doBanco.pagamentos.length !== ref.current.pagamentos.length) setO((x) => ({ ...x, pagamentos: doBanco.pagamentos, parcelas: doBanco.parcelas, status: doBanco.status, aprovadoEm: doBanco.aprovadoEm }));
-  }, [doBanco]);
-
-  // salva sozinho (pagamentos são gravados pelas ações próprias, não aqui)
+  // salva sozinho — só quando VOCÊ mexe (pagamentos são gravados pelas ações próprias, não aqui)
   const timer = useRef<number>();
   const apagado = useRef(false);
+  const pendente = useRef(false);
+  const ultimaGravada = useRef(inicial.atualizadoEm);
   const gravar = useCallback(() => {
-    if (apagado.current) return;
+    if (apagado.current || !pendente.current) return;
+    pendente.current = false;
     const { pagamentos: _p, parcelas: _n, ...resto } = ref.current;
     void _p; void _n;
-    return db.orcamentos.update(resto.id, { ...resto, atualizadoEm: new Date().toISOString() });
+    const quando = new Date().toISOString();
+    ultimaGravada.current = quando;
+    return db.orcamentos.update(resto.id, { ...resto, atualizadoEm: quando });
   }, []);
   const set = useCallback((p: Partial<Orcamento>) => {
+    pendente.current = true;
     setO((x) => ({ ...x, ...p }));
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(gravar, 350);
   }, [gravar]);
+
+  // mudou por fora (nuvem, outro aparelho, pagamento): se você não está editando agora, a tela pega a versão nova.
+  // Assim a tela aberta nunca regrava por cima de uma mudança que chegou da nuvem.
+  useEffect(() => {
+    if (!doBanco) return;
+    if (doBanco.atualizadoEm !== ultimaGravada.current && !pendente.current) {
+      ultimaGravada.current = doBanco.atualizadoEm;
+      setO(doBanco);
+    } else if (doBanco.pagamentos.length !== ref.current.pagamentos.length) {
+      setO((x) => ({ ...x, pagamentos: doBanco.pagamentos, parcelas: doBanco.parcelas, status: doBanco.status, aprovadoEm: doBanco.aprovadoEm }));
+    }
+  }, [doBanco]);
 
   // ao sair: grava o que faltou; apaga se ficou totalmente vazio
   useEffect(() => () => {
@@ -273,7 +287,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
       </Sheet>
       <ClienteSheet open={sheet === 'cliente'} onClose={fechar} onPick={(c, endereco, telefone) => { set({ clienteId: c?.id || null, clienteNome: c?.nome ?? o.clienteNome, endereco, telefone }); fechar(); }} orc={o} />
       {itemEdit && <ItemSheet key={itemEdit.id} open={sheet === 'item'} item={itemEdit} novo={!o.itens.some((x) => x.id === itemEdit.id)} onClose={fechar} onSave={salvarItem} onRemove={removerItem} />}
-      <PagamentoSheet open={sheet === 'pagamento'} onClose={fechar} saldo={pag.saldo} parcelasAtuais={o.parcelas} feitos={o.pagamentos.length} onSave={async (p, parcelas) => { await registrarPagamento({ ...o, pagamentos: doBanco?.pagamentos ?? o.pagamentos }, p, parcelas); fechar(); toast(`Anotado: ${brl(p.valor)} em ${fmtData(p.data)}, ${p.forma}`); }} />
+      <PagamentoSheet open={sheet === 'pagamento'} onClose={fechar} saldo={pag.saldo} parcelasAtuais={o.parcelas} feitos={o.pagamentos.length} calheirosOrc={o.calheiroIds.map((id) => calheiros.find((c) => c.id === id)).filter(Boolean) as Calheiro[]} maoDeObra={r.linhas.filter((l) => l.item.tipo === 'mao').reduce((s, l) => s + l.total, 0)} onSave={async (p, parcelas) => { await registrarPagamento({ ...o, pagamentos: doBanco?.pagamentos ?? o.pagamentos }, p, parcelas); fechar(); toast(p.forma === DIRETO_CALHEIRO ? `Anotado: ${brl(p.valor)} pago direto ao ${p.conta} (fora do financeiro)` : `Anotado: ${brl(p.valor)} em ${fmtData(p.data)}, ${p.forma}`); }} />
       <PdfSheet open={sheet === 'pdf'} onClose={fechar} orc={o} calheiros={calheiros} quitado={pag.situacao === 'quitado' && o.pagamentos.length > 0} onEnviado={() => { if (o.status === 'rascunho') set({ status: 'enviado', enviadoEm: hojeISO() }); }} />
       <CalheiroRapido open={sheet === 'calheiro'} onClose={fechar} onCriado={(c) => set({ calheiroIds: [...o.calheiroIds, c.id] })} />
       <Confirm open={sheet === 'separar'} onClose={fechar} title="Separar de novo?" text={`Este orçamento junto (nº ${o.numero}) será apagado e os ${origens.length} orçamentos antigos voltam ao normal.`} confirmLabel="Separar" onConfirm={async () => { apagado.current = true; window.clearTimeout(timer.current); await separarJuncao(o); toast('Orçamentos separados de novo'); replace('orcamentos'); }} />
@@ -445,26 +459,37 @@ function ItemSheet({ open, item, novo, onClose, onSave, onRemove }: { open: bool
 }
 
 // ---------------- pagamento ----------------
-function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave }: { open: boolean; onClose: () => void; saldo: number; parcelasAtuais: number; feitos: number; onSave: (p: { data: string; valor: number; forma: string; conta: string }, parcelas: number) => void }) {
+function PagamentoSheet({ open, onClose, saldo, parcelasAtuais, feitos, onSave, calheirosOrc, maoDeObra }: { open: boolean; onClose: () => void; saldo: number; parcelasAtuais: number; feitos: number; onSave: (p: { data: string; valor: number; forma: string; conta: string }, parcelas: number) => void; calheirosOrc: Calheiro[]; maoDeObra: number }) {
   const [valor, setValor] = useState<number | null>(saldo);
   const [data, setData] = useState(hojeISO());
   const [forma, setForma] = useState('Pix');
   const [conta, setConta] = useState('Sicoob');
   const [parcelas, setParcelas] = useState(Math.max(parcelasAtuais, feitos + 1));
   useEffect(() => { if (open) { setValor(saldo); setData(hojeISO()); setForma('Pix'); setConta('Sicoob'); setParcelas(Math.max(parcelasAtuais, feitos + 1)); } }, [open, saldo, parcelasAtuais, feitos]);
-  const ok = (valor ?? 0) > 0 && data;
+  const ok = (valor ?? 0) > 0 && data && (valor ?? 0) <= saldo + 0.004;
+  const direto = forma === DIRETO_CALHEIRO;
+  const formas = calheirosOrc.length ? [...FORMAS_PAGAMENTO, DIRETO_CALHEIRO] : FORMAS_PAGAMENTO;
+  const escolher = (f: string) => {
+    setForma(f);
+    if (f === DIRETO_CALHEIRO) {
+      setConta(calheirosOrc[0]?.nome ?? '');
+      if (maoDeObra > 0) setValor(Math.min(maoDeObra, saldo));
+    } else setConta(contaPadrao(f));
+  };
   return (
     <Sheet open={open} onClose={onClose} title="Registrar pagamento">
-      <div className="field"><label htmlFor="p-v">Valor recebido</label><MoneyInput id="p-v" value={valor} onChange={setValor} autoFocus /><span className="hint">Falta {brl(saldo)}</span></div>
+      <div className="field"><label htmlFor="p-v">{direto ? 'Valor pago ao calheiro' : 'Valor recebido'}</label><MoneyInput id="p-v" value={valor} onChange={setValor} autoFocus /><span className="hint">Falta {brl(saldo)}</span>{(valor ?? 0) > saldo + 0.004 && <span className="err">Passa do que falta ({brl(saldo)}).</span>}</div>
       <div className="field"><label htmlFor="p-d">Data</label><input id="p-d" type="date" className="input" value={data} onChange={(e) => setData(e.target.value)} /></div>
       <div className="field"><span className="label">Forma</span>
-        <div className="chips" style={{ flexWrap: 'wrap', margin: 0, padding: 0 }}>{FORMAS_PAGAMENTO.map((f) => <button key={f} className="chip" aria-pressed={forma === f} onClick={() => { setForma(f); setConta(contaPadrao(f)); }}>{f}</button>)}</div>
+        <div className="chips" style={{ flexWrap: 'wrap', margin: 0, padding: 0 }}>{formas.map((f) => <button key={f} className="chip" aria-pressed={forma === f} onClick={() => escolher(f)}>{f}</button>)}</div>
       </div>
       <div className="grid2">
-        <div className="field"><label htmlFor="p-c">Entrou na conta</label><select id="p-c" className="input" value={conta} onChange={(e) => setConta(e.target.value)}>{CONTAS.map((c) => <option key={c}>{c}</option>)}</select></div>
+        {direto
+          ? <div className="field"><label htmlFor="p-c">Para qual calheiro</label><select id="p-c" className="input" value={conta} onChange={(e) => setConta(e.target.value)}>{calheirosOrc.map((c) => <option key={c.id}>{c.nome}</option>)}</select></div>
+          : <div className="field"><label htmlFor="p-c">Entrou na conta</label><select id="p-c" className="input" value={conta} onChange={(e) => setConta(e.target.value)}>{CONTAS.map((c) => <option key={c}>{c}</option>)}</select></div>}
         <div className="field"><label htmlFor="p-n">Em quantas parcelas</label><select id="p-n" className="input" value={parcelas} onChange={(e) => setParcelas(Number(e.target.value))}>{Array.from({ length: 12 }, (_, i) => i + 1).filter((n) => n > feitos).map((n) => <option key={n} value={n}>{n === 1 ? 'À vista (1x)' : `${n}x`}</option>)}</select></div>
       </div>
-      <p className="hint" style={{ margin: 0 }}>Vai ser a parcela {feitos + 1} de {parcelas}. O pagamento entra sozinho no financeiro.</p>
+      <p className="hint" style={{ margin: 0 }}>Vai ser a parcela {feitos + 1} de {parcelas}. {direto ? `O cliente pagou direto ao ${conta}: conta como pago no orçamento, mas NÃO entra no seu financeiro.` : 'O pagamento entra sozinho no financeiro.'}</p>
       <button className="btn block primary" disabled={!ok} onClick={() => onSave({ valor: valor ?? 0, data, forma, conta }, parcelas)}><Icon name="check" />Registrar {valor ? brl(valor) : ''}</button>
     </Sheet>
   );

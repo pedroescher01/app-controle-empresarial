@@ -1,6 +1,7 @@
 import { db, getConfig, novoNumeroOrcamento, type Cliente, type Lancamento, type Orcamento, type Pagamento, type Visita } from '../lib/db';
 import { addDias, hojeISO, uid } from '../lib/format';
 import { enderecoTexto } from '../lib/calc';
+import { DIRETO_CALHEIRO } from '../lib/catalog';
 import { juntar } from '../lib/juntar';
 
 /** Cria o orçamento já completo numa gravação só (a tela nunca abre com ele pela metade). */
@@ -64,7 +65,8 @@ export async function registrarPagamento(orc: Orcamento, p: Omit<Pagamento, 'id'
       aprovadoEm: orc.aprovadoEm ?? p.data,
       atualizadoEm: new Date().toISOString(),
     });
-    await db.lancamentos.add(lanc);
+    // pago direto ao calheiro: o dinheiro não passou pela empresa, então não entra no financeiro
+    if (p.forma !== DIRETO_CALHEIRO) await db.lancamentos.add(lanc);
   });
 }
 
