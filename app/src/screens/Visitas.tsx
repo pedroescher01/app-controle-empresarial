@@ -7,6 +7,7 @@ import { enderecoTexto } from '../lib/calc';
 import { Confirm, Empty, Icon, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { novoCliente, novoEndereco } from './Clientes';
 import { criarOrcamentoDaVisita } from './orcamentoActions';
+import { mensagemCalheiro } from '../lib/visitas';
 
 export const PRECISA = ['Calha', 'Rufo', 'Pingadeira', 'Condutor', 'Goteira', 'Telhado'];
 export const ESCADA: Record<Escada, string> = { normal: 'Normal', alta: 'Alta', muito_alta: 'Muito alta' };
@@ -72,6 +73,7 @@ export function VisitasLista({ aba }: { aba: string }) {
 
 function VisitaCard({ v, calheiros, onMedido }: { v: Visita; calheiros: Calheiro[]; onMedido: () => void }) {
   const toast = useToast();
+  const [avisar, setAvisar] = useState(false);
   const dias = diasEntre(v.criadoEm, hojeISO());
   const cal = calheiros.find((c) => c.id === v.calheiroId)?.nome;
   const precisa = [v.precisa.join(', '), v.detalhe.trim()].filter(Boolean).join(' · ');
@@ -97,15 +99,44 @@ function VisitaCard({ v, calheiros, onMedido }: { v: Visita; calheiros: Calheiro
         {v.status === 'medido' && <Pill cor="ok"><Icon name="check" style={{ width: 12, height: 12 }} />Medido{cal ? ` · ${cal}` : ''}</Pill>}
         {v.status === 'a_medir' && cal && <Pill cor="mute">{cal}</Pill>}
       </div>
-      <div className="ft">
+      <div className="ft acoes">
         {v.telefone && <a className="btn ghost" aria-label={`Ligar para ${v.nome}`} href={telLink(v.telefone)}><Icon name="phone" /></a>}
         {v.telefone && <a className="btn ghost" aria-label={`WhatsApp de ${v.nome}`} href={waLink(v.telefone, v.status === 'a_medir' ? mensagemConfirmacao(v) : undefined)} target="_blank" rel="noreferrer"><Icon name="wa" /></a>}
+        {v.status === 'a_medir' && <button className="btn ghost" aria-label="Avisar os calheiros" onClick={() => setAvisar(true)}><Icon name="helmet" />Calheiros</button>}
         <span className="sp" />
         {v.status === 'a_medir'
           ? <button className="btn primary" onClick={onMedido}><Icon name="check" />Medido</button>
           : <button className="btn" onClick={abrirOrcamento}><Icon name="doc" />{v.orcamentoId ? 'Ver orçamento' : 'Fazer orçamento'}</button>}
       </div>
+      {avisar && <AvisarCalheiros v={v} calheiros={calheiros} onClose={() => setAvisar(false)} />}
     </article>
+  );
+}
+
+function AvisarCalheiros({ v, calheiros, onClose }: { v: Visita; calheiros: Calheiro[]; onClose: () => void }) {
+  const ativos = calheiros.filter((c) => c.ativo);
+  const com = ativos.filter((c) => c.telefone);
+  const sem = ativos.filter((c) => !c.telefone);
+  return (
+    <Sheet open onClose={onClose} title="Avisar os calheiros">
+      <p className="hint" style={{ margin: 0 }}>Toque no calheiro para abrir o WhatsApp com a mensagem pronta. Depois volte aqui para mandar para o próximo.</p>
+      <div className="pix-code" style={{ whiteSpace: 'pre-wrap', wordBreak: 'normal', overflowWrap: 'anywhere', maxHeight: 190, fontSize: 13 }}>{mensagemCalheiro(v, null, hojeISO()).replace(/https:\S+/, 'link do Google Maps')}</div>
+      <div className="card list">
+        {com.map((c) => (
+          <a key={c.id} className="row" href={waLink(c.telefone, mensagemCalheiro(v, c, hojeISO()))} target="_blank" rel="noreferrer">
+            <div className="avatar">{iniciais(c.nome)}</div>
+            <div className="main"><div className="t">{c.nome}</div><div className="s">{c.telefone}</div></div>
+            <span className="btn ghost" style={{ color: 'var(--ok)' }}><Icon name="wa" />Mandar</span>
+          </a>
+        ))}
+        <a className="row" href={`https://wa.me/?text=${encodeURIComponent(mensagemCalheiro(v, null, hojeISO()))}`} target="_blank" rel="noreferrer">
+          <div className="ic mute"><Icon name="users" /></div>
+          <div className="main"><div className="t">Escolher no WhatsApp</div><div className="s">Grupo ou outro contato</div></div>
+          <Icon name="chev" className="chev" />
+        </a>
+      </div>
+      {sem.length > 0 && <p className="hint" style={{ margin: 0 }}>Sem telefone cadastrado: {sem.map((c) => c.nome).join(', ')}. Dá para colocar em Mais → Calheiros.</p>}
+    </Sheet>
   );
 }
 
