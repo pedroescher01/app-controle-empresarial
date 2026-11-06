@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { db, setConfig, type Calheiro } from '../lib/db';
-import { useCalheiros, useConfig } from '../lib/hooks';
+import { useCalheiros, useConfig, useNuvem } from '../lib/hooks';
 import { CATALOGO, precoCatalogo } from '../lib/catalog';
 import { brl, fmtData, haDias, maskPhone, waLink } from '../lib/format';
 import { go } from '../lib/router';
@@ -15,6 +15,7 @@ import { ativarFaceId, desativarFaceId, faceIdDisponivel } from '../lib/faceid';
 export function Mais({ onLock }: { onLock: () => void }) {
   const cfg = useConfig();
   const calheiros = useCalheiros();
+  const nuvem = useNuvem();
   return (
     <section className="stack">
       <TopBar eyebrow="Ajustes do sistema" title="Mais" />
@@ -26,6 +27,7 @@ export function Mais({ onLock }: { onLock: () => void }) {
       <div className="card list">
         <a className="row" href="#/mais/precos"><div className="ic red"><Icon name="tag" /></div><div className="main"><div className="t">Tabela de preços</div><div className="s">Metro a {brl(cfg.precoMetro)} · chapa 24 +{Math.round((cfg.fatorChapa24 - 1) * 100)}%</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/mais/calheiros"><div className="ic info"><Icon name="helmet" /></div><div className="main"><div className="t">Calheiros</div><div className="s">{calheiros.length ? calheiros.map((c) => c.nome).join(', ') : 'Nenhum cadastrado'}</div></div><Icon name="chev" className="chev" /></a>
+        <a className="row" href="#/mais/nuvem"><div className={`ic ${nuvem.conectado ? (nuvem.erro ? 'warn' : 'ok') : 'red'}`}><Icon name="upload" /></div><div className="main"><div className="t">Nuvem</div><div className="s">{nuvem.conectado ? (nuvem.erro ? nuvem.erro : `Ligada · ${nuvem.email}`) : 'Desligada · toque para ligar'}</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/mais/backup"><div className="ic ok"><Icon name="hard" /></div><div className="main"><div className="t">Backup dos dados</div><div className="s">{cfg.ultimoBackup ? `Último ${haDias(cfg.ultimoBackup)}` : 'Nunca feito'}</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/mais/empresa"><div className="ic mute"><Icon name="building" /></div><div className="main"><div className="t">Dados no PDF</div><div className="s">{cfg.email ? cfg.email : 'E-mail em branco'} · validade {cfg.validadeDias} dias</div></div><Icon name="chev" className="chev" /></a>
       </div>
@@ -40,7 +42,7 @@ export function Mais({ onLock }: { onLock: () => void }) {
         <a className="row" href="#/mais/pin"><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Trocar PIN</div></div><Icon name="chev" className="chev" /></a>
         <button className="row" onClick={onLock}><div className="ic mute"><Icon name="lock" /></div><div className="main"><div className="t">Bloquear agora</div></div></button>
       </div>
-      <p className="hint" style={{ textAlign: 'center' }}>Os dados ficam guardados neste iPhone. Faça backup toda semana.<br />Versão de {VERSAO_ATUAL ? new Date(VERSAO_ATUAL).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</p>
+      <p className="hint" style={{ textAlign: 'center' }}>{nuvem.conectado ? 'Os dados ficam neste iPhone e com cópia automática na nuvem.' : 'Os dados ficam guardados neste iPhone. Ligue a nuvem ou faça backup toda semana.'}<br />Versão de {VERSAO_ATUAL ? new Date(VERSAO_ATUAL).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</p>
     </section>
   );
 }

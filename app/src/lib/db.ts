@@ -233,6 +233,8 @@ class CalhasDB extends Dexie {
   bobinas!: Table<Bobina, string>;
   fornecedores!: Table<Fornecedor, string>;
   pedidos!: Table<Pedido, string>;
+  /** controle da sincronização com a nuvem: chave "tabela:id" → impressão do registro já enviado */
+  sync!: Table<{ chave: string; marca: string }, string>;
   config!: Table<ConfigRow, string>;
 
   constructor() {
@@ -258,6 +260,7 @@ class CalhasDB extends Dexie {
       pedidos: 'id, numero, fornecedorId, criadoEm',
       lancamentos: 'id, data, tipo, orcamentoId, pagamentoId, contaFixaId, pedidoId',
     });
+    this.version(5).stores({ sync: 'chave' });
   }
 }
 

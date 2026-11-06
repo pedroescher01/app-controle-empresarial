@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useBobinas, useConfig, useContasFixas, useLancamentos, useOrcamentos, usePedidos, useVisitas } from '../lib/hooks';
+import { useNuvem, useBobinas, useConfig, useContasFixas, useLancamentos, useOrcamentos, usePedidos, useVisitas } from '../lib/hooks';
 import { contasProximas } from '../lib/financeiro';
 import { bobinasParaComprar, statusPedido } from '../lib/bobinas';
 import { calcular, resumoPagamentos, statusVisual } from '../lib/calc';
@@ -39,12 +39,13 @@ export function Inicio() {
   }, [orcs, cfg, hoje, mesISO]);
 
   const diasBackup = cfg.ultimoBackup ? diasEntre(cfg.ultimoBackup.slice(0, 10), hoje) : null;
-  const precisaBackup = orcs.length > 0 && (diasBackup == null || diasBackup >= 7);
+  const nuvem = useNuvem();
+  const precisaBackup = !nuvem.conectado && orcs.length > 0 && (diasBackup == null || diasBackup >= 7);
   const h = new Date().getHours();
   const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const mes = nomeMes(new Date().getMonth());
 
-  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0 || contasVencendo.length > 0 || paraComprar.length > 0 || pedidosAtencao.length > 0;
+  const atencao = !nuvem.conectado || precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0 || contasVencendo.length > 0 || paraComprar.length > 0 || pedidosAtencao.length > 0;
   const agendaHoje = visitasHoje.length + servicosHoje.length;
 
   return (
@@ -116,6 +117,19 @@ export function Inicio() {
                 <div className="main"><div className="t">{visitas.length} visita{visitas.length > 1 ? 's' : ''} a medir</div><div className="s">{maisAntiga ? (diasEntre(maisAntiga, hoje) >= 2 ? `A mais antiga espera ${haDias(maisAntiga)}` : diasEntre(maisAntiga, hoje) === 1 ? 'A mais antiga é de ontem' : 'Anotadas hoje') : ''}</div></div>
                 <Icon name="chev" className="chev" />
               </button>
+            )}
+            {!nuvem.conectado && (
+              <a className="row" href="#/mais/nuvem">
+                <div className="ic red"><Icon name="upload" /></div>
+                <div className="main"><div className="t">Ligar a nuvem</div><div className="s">Cópia automática de tudo, para não perder nada</div></div>
+                <Icon name="chev" className="chev" />
+              </a>
+            )}
+            {nuvem.conectado && nuvem.erro && (
+              <a className="row" href="#/mais/nuvem">
+                <div className="ic warn"><Icon name="alert" /></div>
+                <div className="main"><div className="t">Nuvem</div><div className="s">{nuvem.erro}</div></div>
+              </a>
             )}
             {precisaBackup && (
               <button className="row" onClick={() => go('mais/backup')}>

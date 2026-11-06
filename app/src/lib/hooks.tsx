@@ -1,4 +1,5 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { agendarSincronizacao, estadoNuvem, ouvirNuvem, type EstadoNuvem } from './nuvem';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Table } from 'dexie';
 import { db, getConfig, type Calheiro, type Cliente, type Config, type Bobina, type ContaFixa, type Fornecedor, type Lancamento, type Orcamento, type Pedido, type Visita } from './db';
@@ -38,6 +39,10 @@ export function DadosProvider({ children }: { children: ReactNode }) {
     ]);
     return { config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos };
   }, []);
+  // qualquer mudança nos dados: manda para a nuvem alguns segundos depois
+  useEffect(() => {
+    if (d && estadoNuvem().conectado) agendarSincronizacao();
+  }, [d]);
   if (!d) return null; // só no primeiro instante ao abrir o app
   return <Ctx.Provider value={d}>{children}</Ctx.Provider>;
 }
@@ -63,4 +68,13 @@ export function useRegistro<T extends { id: string }>(lista: T[], tabela: Table<
   const doBanco = useLiveQuery(async () => (id && !daMemoria ? (await tabela.get(id)) ?? null : null), [id, !!daMemoria]);
   if (!id) return null;
   return daMemoria ?? doBanco;
+}
+
+export function useNuvem(): EstadoNuvem {
+  const [e, setE] = useState(estadoNuvem());
+  useEffect(() => {
+    const off = ouvirNuvem(setE);
+    return () => { off(); };
+  }, []);
+  return e;
 }

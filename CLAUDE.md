@@ -10,6 +10,14 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 - Endereço: https://pedroescher01.github.io/app-controle-empresarial/
 - O app confere `versao.json` ao abrir/voltar e se atualiza sozinho.
 
+## Nuvem (Supabase)
+- Projeto `calhas-andrade` (ref `mwaymuqftixvyhwqtrzs`, São Paulo), conta do e-mail calhasandradeararas@gmail.com.
+- Tabela única `registros (dono, tabela, id, dados jsonb, apagado, atualizado_em)` com RLS: cada usuário só vê o que é dele.
+- `lib/nuvem.ts`: o iPhone continua sendo o principal (Dexie); sincroniza ao mudar algo, ao abrir/voltar e a cada 5 min.
+  PIN, Face ID e último backup NUNCA vão para a nuvem.
+- Depois que o Pedro criar a conta dele: fechar o cadastro (`disable_signup: true` na config de auth).
+- Teste de 2 aparelhos: criar usuário de teste, conferir, e APAGAR o usuário de teste no fim.
+
 ## Erros já corrigidos — NÃO repetir (conferir em toda tela nova)
 1. **Barras fixas soltas no iPhone com o teclado.** Nada de novo `position: fixed; bottom: ...`.
    - Barras de baixo (abas, total): escondem com `body.kb` (teclado aberto). Toda barra nova precisa entrar nessa regra.
