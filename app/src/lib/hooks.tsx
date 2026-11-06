@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { agendarSincronizacao, estadoNuvem, ouvirNuvem, type EstadoNuvem } from './nuvem';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Table } from 'dexie';
-import { db, getConfig, type Calheiro, type Cliente, type Config, type Bobina, type ContaFixa, type Fornecedor, type Lancamento, type Orcamento, type Pedido, type Visita } from './db';
+import { db, getConfig, type Calheiro, type Cliente, type Config, type Adiantamento, type Bobina, type ContaFixa, type Fornecedor, type Lancamento, type Orcamento, type Pedido, type Visita } from './db';
 
 /**
  * Todos os dados ficam carregados na memória (são poucos) e se atualizam sozinhos.
@@ -19,13 +19,14 @@ type Dados = {
   bobinas: Bobina[];
   fornecedores: Fornecedor[];
   pedidos: Pedido[];
+  adiantamentos: Adiantamento[];
 };
 
 const Ctx = createContext<Dados | null>(null);
 
 export function DadosProvider({ children }: { children: ReactNode }) {
   const d = useLiveQuery(async (): Promise<Dados> => {
-    const [config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos] = await Promise.all([
+    const [config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos, adiantamentos] = await Promise.all([
       getConfig(),
       db.clientes.orderBy('nome').toArray(),
       db.calheiros.orderBy('nome').toArray(),
@@ -36,8 +37,9 @@ export function DadosProvider({ children }: { children: ReactNode }) {
       db.bobinas.toArray(),
       db.fornecedores.orderBy('nome').toArray(),
       db.pedidos.orderBy('criadoEm').reverse().toArray(),
+      db.adiantamentos.toArray(),
     ]);
-    return { config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos };
+    return { config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos, adiantamentos };
   }, []);
   // qualquer mudança nos dados: manda para a nuvem alguns segundos depois
   useEffect(() => {
@@ -58,6 +60,7 @@ export const useContasFixas = () => useDados().contasFixas;
 export const useBobinas = () => useDados().bobinas;
 export const useFornecedores = () => useDados().fornecedores;
 export const usePedidos = () => useDados().pedidos;
+export const useAdiantamentos = () => useDados().adiantamentos;
 
 /**
  * Um registro pelo id. Vem da memória na hora; se acabou de ser criado e a memória

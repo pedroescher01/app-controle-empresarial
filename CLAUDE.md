@@ -48,6 +48,8 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 8. **Ordenar por data sempre com desempate** (ex.: número do pedido). Duas coisas no mesmo dia já inverteram "subiu"/"caiu".
 9. **Criar registro completo numa gravação só** (ex.: `criarOrcamento(cliente, extra)`). Criar vazio e completar depois
    fez a tela abrir o orçamento em branco (aconteceu ao juntar orçamentos).
+9a. **Tabela nova + nuvem:** o app busca tudo de novo quando a lista `TABELAS_DADOS` muda (versão antiga pode ter pulado
+   registros da tabela nova). Publicar o app ANTES de gravar dados da tabela nova direto na nuvem.
 9b. Toda tabela nova entra em `TABELAS_DADOS` (db.ts) para ir no backup, e no `DadosProvider`.
 10. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
 

@@ -149,6 +149,22 @@ export type Pedido = {
   atualizadoEm: string;
 };
 
+/**
+ * Material que o calheiro leva adiantado (fica no carro) e vai sendo descontado nos serviços.
+ * quantidade > 0 = pegou; < 0 = descontado num orçamento. O saldo é a soma.
+ */
+export type Adiantamento = {
+  id: string;
+  calheiroId: string;
+  /** chave do item: catálogo ("silicone") ou "desc:<descrição>" */
+  chave: string;
+  descricao: string;
+  quantidade: number;
+  data: string;
+  orcamentoId: string | null;
+  criadoEm: string;
+};
+
 export type Lancamento = {
   id: string;
   tipo: 'entrada' | 'saida';
@@ -235,6 +251,7 @@ class CalhasDB extends Dexie {
   pedidos!: Table<Pedido, string>;
   /** controle da sincronização com a nuvem: chave "tabela:id" → impressão do registro já enviado */
   sync!: Table<{ chave: string; marca: string }, string>;
+  adiantamentos!: Table<Adiantamento, string>;
   config!: Table<ConfigRow, string>;
 
   constructor() {
@@ -261,6 +278,7 @@ class CalhasDB extends Dexie {
       lancamentos: 'id, data, tipo, orcamentoId, pagamentoId, contaFixaId, pedidoId',
     });
     this.version(5).stores({ sync: 'chave' });
+    this.version(6).stores({ adiantamentos: 'id, calheiroId, orcamentoId' });
   }
 }
 
@@ -301,5 +319,5 @@ export async function pedirArmazenamentoPersistente() {
 }
 
 /** Todas as tabelas de dados (o backup usa esta lista; toda tabela nova entra aqui). */
-export const TABELAS_DADOS = ['clientes', 'calheiros', 'orcamentos', 'lancamentos', 'visitas', 'contasFixas', 'bobinas', 'fornecedores', 'pedidos'] as const;
+export const TABELAS_DADOS = ['clientes', 'calheiros', 'orcamentos', 'lancamentos', 'visitas', 'contasFixas', 'bobinas', 'fornecedores', 'pedidos', 'adiantamentos'] as const;
 export type NomeTabela = (typeof TABELAS_DADOS)[number];

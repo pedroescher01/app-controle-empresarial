@@ -15,6 +15,7 @@ import { Bobinas, Fornecedores, PedidoTela, PrecoKg } from './screens/Bobinas';
 import { Juntar } from './screens/Juntar';
 import { Nuvem } from './screens/Nuvem';
 import { Avisos } from './screens/Avisos';
+import { CalheiroTela } from './screens/Calheiro';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -132,6 +133,7 @@ function Shell({ onLock }: { onLock: () => void }) {
     case 'orcamento': tela = <OrcamentoTela id={b} />; aba = 'orcamentos'; barra = true; break;
     case 'bobinas': tela = b === 'precos' ? <PrecoKg /> : <Bobinas />; aba = 'mais'; break;
     case 'pedido': tela = <PedidoTela id={b} />; aba = 'mais'; break;
+    case 'calheiro': tela = <CalheiroTela id={b} />; aba = 'mais'; break;
     case 'fornecedores': tela = <Fornecedores />; aba = 'mais'; break;
     case 'clientes': tela = <ClientesLista />; aba = 'mais'; break;
     case 'cliente':

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { db, type Calheiro, type Cliente, type Item, type Orcamento, type StatusOrc } from '../lib/db';
 import { go, replace } from '../lib/router';
-import { useCalheiros, useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
+import { useAdiantamentos, useCalheiros, useClientes, useConfig, useOrcamentos, useRegistro } from '../lib/hooks';
 import { CATALOGO, CONTAS, CORTES, FORMAS_PAGAMENTO, UNIDADES, contaPadrao, precoCatalogo, type CatalogItem } from '../lib/catalog';
 import { calcular, enderecoTexto, nomeArquivo, precoMetroItem, resumoPagamentos, statusVisual, juntarNomes } from '../lib/calc';
 import { addDias, brl, dec2, fmtData, hojeISO, iniciais, maskPhone, qtd, r2, semAcento, uid, waLink } from '../lib/format';
@@ -9,6 +9,8 @@ import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, 
 import { apagarOrcamento, apagarPagamento, registrarPagamento, separarJuncao } from './orcamentoActions';
 import { compartilharArquivo } from '../lib/share';
 import { novoCliente } from './Clientes';
+import { DescontoMaterial } from './Calheiro';
+import { sugestoes as sugestoesMaterial } from '../lib/adiantamento';
 
 const ITEM_LIVRE: CatalogItem = { key: 'livre', descricao: '', chip: '', unidade: 'un', tipo: 'unidade', preco: 0, grupo: 'Acessórios' };
 
@@ -22,6 +24,7 @@ export function OrcamentoTela({ id }: { id: string }) {
 function Editor({ inicial }: { inicial: Orcamento }) {
   const cfg = useConfig();
   const calheiros = useCalheiros();
+  const adiantamentos = useAdiantamentos();
   const toast = useToast();
   const [o, setO] = useState<Orcamento>(inicial);
   const ref = useRef(o);
@@ -137,6 +140,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         </div>
         {!o.calheiroIds.length && o.clienteNome && <span className="hint" style={{ paddingLeft: 2 }}>Sem calheiro, o PDF sai como “{o.clienteNome} - ({o.clienteNome})”.</span>}
       </div>
+      <DescontoMaterial sugestoes={sugestoesMaterial(adiantamentos, o.calheiroIds, o.itens, o.id)} calheiros={calheiros} orcamentoId={o.id} />
 
       <Seg label="Estilo do orçamento" value={o.modo} onChange={(modo) => set({ modo })} options={[{ value: 'simples', label: 'Simples' }, { value: 'detalhado', label: 'Detalhado' }]} />
       <p className="hint" style={{ margin: '-8px 2px 0' }}>{simples ? 'No PDF vão quantidade, unidade e descrição. Só o total geral leva valor.' : 'No PDF cada linha mostra o valor unitário e o total.'}</p>

@@ -76,8 +76,10 @@ export async function apagarPagamento(orc: Orcamento, pagamentoId: string) {
 }
 
 export async function apagarOrcamento(orc: Orcamento) {
-  await db.transaction('rw', db.orcamentos, db.lancamentos, async () => {
+  await db.transaction('rw', db.orcamentos, db.lancamentos, db.adiantamentos, async () => {
     await db.lancamentos.where('orcamentoId').equals(orc.id).delete();
+    // material descontado neste orçamento volta para o saldo do calheiro
+    await db.adiantamentos.where('orcamentoId').equals(orc.id).delete();
     await db.orcamentos.delete(orc.id);
   });
 }

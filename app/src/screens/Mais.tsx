@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { db, setConfig, type Calheiro } from '../lib/db';
-import { useCalheiros, useConfig, useNuvem } from '../lib/hooks';
+import { setConfig } from '../lib/db';
+import { useAdiantamentos, useCalheiros, useConfig, useNuvem } from '../lib/hooks';
+import { plural, saldos } from '../lib/adiantamento';
 import { CATALOGO, precoCatalogo } from '../lib/catalog';
-import { brl, fmtData, haDias, maskPhone, waLink } from '../lib/format';
+import { brl, fmtData, haDias } from '../lib/format';
 import { go } from '../lib/router';
 import { gerarBackup, lerBackup, marcarBackupFeito, restaurarBackup, contarBackup, type Backup } from '../lib/backup';
 import { compartilharArquivo } from '../lib/share';
-import { Confirm, Empty, Icon, MoneyInput, PhoneInput, Seg, Sheet, TopBar, useToast } from '../components/ui';
+import { Confirm, Empty, Icon, MoneyInput, Seg, TopBar, useToast } from '../components/ui';
 import { CalheiroRapido } from './Orcamento';
 import { Lock } from './Lock';
 import { VERSAO_ATUAL } from '../lib/atualizar';
@@ -84,8 +85,8 @@ export function Precos() {
 // ---------- calheiros ----------
 export function Calheiros() {
   const calheiros = useCalheiros();
+  const movs = useAdiantamentos();
   const [novo, setNovo] = useState(false);
-  const [edit, setEdit] = useState<Calheiro | null>(null);
   return (
     <section className="stack">
       <TopBar onBack={() => go('mais')} backLabel="Mais" title="Calheiros" right={<button className="icon-btn red" aria-label="Novo calheiro" onClick={() => setNovo(true)}><Icon name="plus" /></button>} />
@@ -93,37 +94,20 @@ export function Calheiros() {
         <Empty icon="helmet" title="Nenhum calheiro" text="Cadastre o Dalvo, o Miguel e os outros. Eles aparecem no orçamento entre parênteses." action={<button className="btn primary" onClick={() => setNovo(true)}><Icon name="plus" />Cadastrar</button>} />
       ) : (
         <div className="card list">
-          {calheiros.map((c) => (
-            <button key={c.id} className="row" onClick={() => setEdit(c)}>
-              <div className="ic info"><Icon name="helmet" /></div>
-              <div className="main"><div className="t">{c.nome}</div><div className="s">{c.telefone || 'Sem telefone'}{!c.ativo && ' · inativo'}</div></div>
-              <Icon name="chev" className="chev" />
-            </button>
-          ))}
+          {calheiros.map((c) => {
+            const sal = saldos(movs, c.id);
+            return (
+              <a key={c.id} className="row" href={`#/calheiro/${c.id}`}>
+                <div className="ic info"><Icon name="helmet" /></div>
+                <div className="main"><div className="t">{c.nome}</div><div className="s">{[c.telefone || 'Sem telefone', !c.ativo ? 'inativo' : '', sal.length ? `com ele: ${sal.map((x) => plural(x.saldo, x.descricao)).join(', ')}` : ''].filter(Boolean).join(' · ')}</div></div>
+                <Icon name="chev" className="chev" />
+              </a>
+            );
+          })}
         </div>
       )}
       <CalheiroRapido open={novo} onClose={() => setNovo(false)} />
-      {edit && <CalheiroEdit c={edit} onClose={() => setEdit(null)} />}
     </section>
-  );
-}
-
-function CalheiroEdit({ c, onClose }: { c: Calheiro; onClose: () => void }) {
-  const [nome, setNome] = useState(c.nome);
-  const [tel, setTel] = useState(maskPhone(c.telefone));
-  const [ativo, setAtivo] = useState(c.ativo);
-  const [apagar, setApagar] = useState(false);
-  const toast = useToast();
-  return (
-    <Sheet open onClose={onClose} title="Calheiro">
-      <div className="field"><label htmlFor="ce-n">Nome</label><input id="ce-n" className="input" value={nome} onChange={(e) => setNome(e.target.value)} /></div>
-      <div className="field"><label htmlFor="ce-t">Telefone</label><PhoneInput id="ce-t" value={tel} onChange={setTel} /></div>
-      <Seg label="Situação" value={ativo ? 's' : 'n'} onChange={(v) => setAtivo(v === 's')} options={[{ value: 's', label: 'Ativo' }, { value: 'n', label: 'Inativo' }]} />
-      {tel && <a className="btn block" href={waLink(tel)} target="_blank" rel="noreferrer"><Icon name="wa" />WhatsApp</a>}
-      <button className="btn block primary" disabled={!nome.trim()} onClick={async () => { await db.calheiros.update(c.id, { nome: nome.trim(), telefone: tel, ativo }); onClose(); }}><Icon name="check" />Salvar</button>
-      <button className="btn block danger" onClick={() => setApagar(true)}><Icon name="trash" />Apagar</button>
-      <Confirm open={apagar} onClose={() => setApagar(false)} title={`Apagar ${c.nome}?`} text="Nos orçamentos antigos o nome dele deixa de aparecer. Se ele só parou de trabalhar com vocês, prefira marcar como inativo." confirmLabel="Apagar" danger onConfirm={async () => { await db.calheiros.delete(c.id); toast('Calheiro apagado'); onClose(); }} />
-    </Sheet>
   );
 }
 

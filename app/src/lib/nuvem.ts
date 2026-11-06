@@ -13,6 +13,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_CHAVE_PUBLICA, {
 const SO_DESTE_APARELHO = ['pinHash', 'pinSalt', 'faceIdCred', 'ultimoBackup'] as const;
 const CHAVE_ULTIMA = '__ultimaBusca';
 const CHAVE_DONO = '__dono';
+const CHAVE_TABELAS = '__tabelas';
 
 /** Impressão curta de um registro (para saber se mudou desde o último envio). */
 export function marca(obj: unknown) {
@@ -94,6 +95,13 @@ async function umaRodada() {
     if (dono?.marca !== sess.user.id) {
       await db.sync.clear();
       await db.sync.put({ chave: CHAVE_DONO, marca: sess.user.id });
+    }
+
+    // versão nova do app com tabela nova: busca tudo de novo (uma versão antiga pode ter pulado registros dela)
+    const tabelas = TABELAS_DADOS.join(',');
+    if ((await db.sync.get(CHAVE_TABELAS))?.marca !== tabelas) {
+      await db.sync.delete(CHAVE_ULTIMA);
+      await db.sync.put({ chave: CHAVE_TABELAS, marca: tabelas });
     }
 
     // 1) buscar o que mudou na nuvem
