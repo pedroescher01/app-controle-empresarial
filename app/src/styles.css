@@ -263,3 +263,27 @@ body.kb .toast { top: calc(var(--vv-top, 0px) + var(--vv-h, 100vh) - 70px); }
 .chart svg { width: 100%; height: auto; display: block; font-family: var(--f-body); }
 .legend { display: inline-flex; gap: 12px; font-size: 12.5px; color: var(--fg-2); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* ---------- bobinas ---------- */
+.grid-b { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.bob { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: var(--f-display); min-height: 60px; }
+.bob:active { transform: scale(.97); }
+.bob b { font-size: 21px; font-weight: 750; line-height: 1; font-variant-numeric: tabular-nums; }
+.bob span { font-size: 10.5px; font-family: var(--f-body); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--fg-3); }
+.bob.buy { border-color: var(--red); background: var(--red-soft); }
+.bob.buy span { color: var(--red); }
+.bob.ord { border-color: var(--info); background: var(--info-soft); }
+.bob.ord span { color: var(--info); }
+.q-box { min-width: 46px; text-align: center; background: var(--surface-2); border-radius: 9px; padding: 5px 4px; font-family: var(--f-display); line-height: 1.05; }
+.q-box b { font-weight: 750; font-size: 17px; }
+.q-box small { display: block; font-family: var(--f-body); font-size: 10.5px; font-weight: 600; color: var(--fg-3); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+.stepper button { width: 36px; height: 36px; border: 0; background: var(--surface-2); font-size: 18px; font-weight: 700; display: grid; place-items: center; }
+.stepper span { min-width: 30px; text-align: center; font-family: var(--f-display); font-weight: 700; }
+.etapa { display: flex; gap: 12px; padding: 14px; }
+.etapa + .etapa { border-top: 1px solid var(--line); }
+.etapa .num-et { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); color: var(--fg-2); }
+.etapa.feita .num-et { background: var(--ok); color: #fff; }
+.etapa .num-et svg { width: 15px; height: 15px; }
+.etapa .btns { grid-template-columns: 1.4fr 1fr; }
+a.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }

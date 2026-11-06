@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Table } from 'dexie';
-import { db, getConfig, type Calheiro, type Cliente, type Config, type ContaFixa, type Lancamento, type Orcamento, type Visita } from './db';
+import { db, getConfig, type Calheiro, type Cliente, type Config, type Bobina, type ContaFixa, type Fornecedor, type Lancamento, type Orcamento, type Pedido, type Visita } from './db';
 
 /**
  * Todos os dados ficam carregados na memória (são poucos) e se atualizam sozinhos.
@@ -15,13 +15,16 @@ type Dados = {
   visitas: Visita[];
   lancamentos: Lancamento[];
   contasFixas: ContaFixa[];
+  bobinas: Bobina[];
+  fornecedores: Fornecedor[];
+  pedidos: Pedido[];
 };
 
 const Ctx = createContext<Dados | null>(null);
 
 export function DadosProvider({ children }: { children: ReactNode }) {
   const d = useLiveQuery(async (): Promise<Dados> => {
-    const [config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas] = await Promise.all([
+    const [config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos] = await Promise.all([
       getConfig(),
       db.clientes.orderBy('nome').toArray(),
       db.calheiros.orderBy('nome').toArray(),
@@ -29,8 +32,11 @@ export function DadosProvider({ children }: { children: ReactNode }) {
       db.visitas.orderBy('criadoEm').reverse().toArray(),
       db.lancamentos.orderBy('data').reverse().toArray(),
       db.contasFixas.toArray(),
+      db.bobinas.toArray(),
+      db.fornecedores.orderBy('nome').toArray(),
+      db.pedidos.orderBy('criadoEm').reverse().toArray(),
     ]);
-    return { config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas };
+    return { config, clientes, calheiros, orcamentos, visitas, lancamentos, contasFixas, bobinas, fornecedores, pedidos };
   }, []);
   if (!d) return null; // só no primeiro instante ao abrir o app
   return <Ctx.Provider value={d}>{children}</Ctx.Provider>;
@@ -44,6 +50,9 @@ export const useOrcamentos = () => useDados().orcamentos;
 export const useVisitas = () => useDados().visitas;
 export const useLancamentos = () => useDados().lancamentos;
 export const useContasFixas = () => useDados().contasFixas;
+export const useBobinas = () => useDados().bobinas;
+export const useFornecedores = () => useDados().fornecedores;
+export const usePedidos = () => useDados().pedidos;
 
 /**
  * Um registro pelo id. Vem da memória na hora; se acabou de ser criado e a memória

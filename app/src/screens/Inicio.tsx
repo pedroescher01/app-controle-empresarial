@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { useConfig, useContasFixas, useLancamentos, useOrcamentos, useVisitas } from '../lib/hooks';
+import { useBobinas, useConfig, useContasFixas, useLancamentos, useOrcamentos, usePedidos, useVisitas } from '../lib/hooks';
 import { contasProximas } from '../lib/financeiro';
+import { bobinasParaComprar, statusPedido } from '../lib/bobinas';
 import { calcular, resumoPagamentos, statusVisual } from '../lib/calc';
 import { brl, dataExtenso, diasEntre, fmtData, haDias, hojeISO, nomeMes, waLink } from '../lib/format';
 import { go } from '../lib/router';
@@ -18,6 +19,9 @@ export function Inicio() {
   const maisAntiga = visitas.reduce<string | null>((m, v) => (!m || v.criadoEm < m ? v.criadoEm : m), null);
   const visitasHoje = visitas.filter((v) => v.data === hoje);
   const lancamentos = useLancamentos();
+  const pedidos = usePedidos();
+  const paraComprar = bobinasParaComprar(useBobinas(), pedidos);
+  const pedidosAtencao = pedidos.filter((p) => p.chegouEm && !p.pagoEm);
   const contasVencendo = contasProximas(useContasFixas(), lancamentos, 3);
   const recebidoMes = lancamentos.filter((l) => l.tipo === 'entrada' && l.data.startsWith(mesISO)).reduce((s, l) => s + l.valor, 0);
 
@@ -39,7 +43,7 @@ export function Inicio() {
   const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
   const mes = nomeMes(new Date().getMonth());
 
-  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0 || contasVencendo.length > 0;
+  const atencao = precisaBackup || d.semResposta.length > 0 || d.rascunhos.length > 0 || visitas.length > 0 || contasVencendo.length > 0 || paraComprar.length > 0 || pedidosAtencao.length > 0;
   const agendaHoje = visitasHoje.length + servicosHoje.length;
 
   return (
@@ -91,6 +95,20 @@ export function Inicio() {
                 <div className="v">{brl(v.conta.valor)}</div>
               </a>
             ))}
+            {pedidosAtencao.map((p) => (
+              <a key={p.id} className="row" href={`#/pedido/${p.id}`}>
+                <div className="ic red"><Icon name="truck" /></div>
+                <div className="main"><div className="t">Pedido nº {p.numero} chegou</div><div className="s">{statusPedido(p).rotulo}</div></div>
+                <Icon name="chev" className="chev" />
+              </a>
+            ))}
+            {paraComprar.length > 0 && (
+              <a className="row" href="#/bobinas">
+                <div className="ic mute"><Icon name="coil" /></div>
+                <div className="main"><div className="t">{paraComprar.length} bobina{paraComprar.length > 1 ? 's' : ''} para comprar</div><div className="s">{paraComprar.slice(0, 5).map((i) => `${i.corte} (ch. ${i.chapa})`).join(' · ')}</div></div>
+                <Icon name="chev" className="chev" />
+              </a>
+            )}
             {visitas.length > 0 && (
               <button className="row" onClick={() => go('visitas')}>
                 <div className="ic red"><Icon name="pin" /></div>

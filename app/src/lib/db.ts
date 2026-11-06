@@ -103,6 +103,50 @@ export type Visita = {
   atualizadoEm: string;
 };
 
+/** Estado de cada bobina (corte × chapa). Tem 2 de cada: uma na produção e outra no estoque. */
+export type Bobina = {
+  /** "26-33" = chapa 26, corte 33 */
+  id: string;
+  corte: number;
+  chapa: 24 | 26;
+  /** ok = tem a do estoque; comprar = a do estoque foi para a produção */
+  estado: 'ok' | 'comprar';
+  atualizadoEm: string;
+};
+
+export type Fornecedor = {
+  id: string;
+  nome: string;
+  cnpj: string;
+  vendedor: string;
+  telefone: string;
+  criadoEm: string;
+};
+
+export type ItemPedido = { corte: number; chapa: 24 | 26; quantidade: number };
+
+export type Pedido = {
+  id: string;
+  numero: number;
+  fornecedorId: string | null;
+  itens: ItemPedido[];
+  observacoes: string;
+  /** datas de cada etapa (null = ainda não) */
+  pedidoEm: string | null;
+  notaEm: string | null;
+  chegouEm: string | null;
+  pagoEm: string | null;
+  /** valores da nota do fornecedor */
+  valorTotal: number | null;
+  pesoKg: number | null;
+  precoKg26: number | null;
+  precoKg24: number | null;
+  formaPagamento: string;
+  contaPagamento: string;
+  criadoEm: string;
+  atualizadoEm: string;
+};
+
 export type Lancamento = {
   id: string;
   tipo: 'entrada' | 'saida';
@@ -119,6 +163,8 @@ export type Lancamento = {
   /** conta fixa paga com este lançamento, e o vencimento a que se refere */
   contaFixaId?: string;
   referencia?: string;
+  /** pedido de compra pago com este lançamento */
+  pedidoId?: string;
   criadoEm: string;
 };
 
@@ -182,6 +228,9 @@ class CalhasDB extends Dexie {
   lancamentos!: Table<Lancamento, string>;
   visitas!: Table<Visita, string>;
   contasFixas!: Table<ContaFixa, string>;
+  bobinas!: Table<Bobina, string>;
+  fornecedores!: Table<Fornecedor, string>;
+  pedidos!: Table<Pedido, string>;
   config!: Table<ConfigRow, string>;
 
   constructor() {
@@ -200,6 +249,12 @@ class CalhasDB extends Dexie {
     this.version(3).stores({
       contasFixas: 'id, ativa',
       lancamentos: 'id, data, tipo, orcamentoId, pagamentoId, contaFixaId',
+    });
+    this.version(4).stores({
+      bobinas: 'id',
+      fornecedores: 'id, nome',
+      pedidos: 'id, numero, fornecedorId, criadoEm',
+      lancamentos: 'id, data, tipo, orcamentoId, pagamentoId, contaFixaId, pedidoId',
     });
   }
 }
@@ -239,3 +294,7 @@ export async function pedirArmazenamentoPersistente() {
     /* sem suporte */
   }
 }
+
+/** Todas as tabelas de dados (o backup usa esta lista; toda tabela nova entra aqui). */
+export const TABELAS_DADOS = ['clientes', 'calheiros', 'orcamentos', 'lancamentos', 'visitas', 'contasFixas', 'bobinas', 'fornecedores', 'pedidos'] as const;
+export type NomeTabela = (typeof TABELAS_DADOS)[number];

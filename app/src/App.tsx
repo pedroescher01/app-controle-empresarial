@@ -11,6 +11,7 @@ import { OrcamentoTela } from './screens/Orcamento';
 import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
 import { VisitaForm, VisitasLista } from './screens/Visitas';
 import { ContasFixas, Financeiro, FinanceiroAno } from './screens/Financeiro';
+import { Bobinas, Fornecedores, PedidoTela, PrecoKg } from './screens/Bobinas';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -125,6 +126,9 @@ function Shell({ onLock }: { onLock: () => void }) {
       tela = b === 'contas' ? <ContasFixas /> : b === 'ano' ? <FinanceiroAno ano={c} /> : <Financeiro mes={b === 'mes' ? c : undefined} />;
       break;
     case 'orcamento': tela = <OrcamentoTela id={b} />; aba = 'orcamentos'; barra = true; break;
+    case 'bobinas': tela = b === 'precos' ? <PrecoKg /> : <Bobinas />; aba = 'mais'; break;
+    case 'pedido': tela = <PedidoTela id={b} />; aba = 'mais'; break;
+    case 'fornecedores': tela = <Fornecedores />; aba = 'mais'; break;
     case 'clientes': tela = <ClientesLista />; aba = 'mais'; break;
     case 'cliente':
       aba = 'mais';

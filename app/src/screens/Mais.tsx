@@ -19,6 +19,7 @@ export function Mais({ onLock }: { onLock: () => void }) {
     <section className="stack">
       <TopBar eyebrow="Ajustes do sistema" title="Mais" />
       <div className="card list">
+        <a className="row" href="#/bobinas"><div className="ic info"><Icon name="coil" /></div><div className="main"><div className="t">Bobinas e pedidos</div><div className="s">Estoque, pedido ao fornecedor, preço do kg</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/clientes"><div className="ic red"><Icon name="users" /></div><div className="main"><div className="t">Clientes</div><div className="s">Cadastro, histórico e contato</div></div><Icon name="chev" className="chev" /></a>
         <a className="row" href="#/financeiro/contas"><div className="ic warn"><Icon name="clock" /></div><div className="main"><div className="t">Contas fixas e maquininha</div><div className="s">Aluguel, DAS, retirada, taxas do cartão</div></div><Icon name="chev" className="chev" /></a>
       </div>

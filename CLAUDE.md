@@ -32,7 +32,9 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
    sem linha repetida de "Total pago"; quitado = "orçamento quitado." + selo P.G na última parcela; nunca "1 de 1" com saldo.
 6. **Quadro vazio / botão "Adicionar item"** abrem direto a tela de **digitar** item (não a lista).
 7. Ler com atenção o que o Pedro pede (ex.: "abrir a tela de digitar" ≠ "abrir a lista"). Na dúvida, perguntar.
-8. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
+8. **Ordenar por data sempre com desempate** (ex.: número do pedido). Duas coisas no mesmo dia já inverteram "subiu"/"caiu".
+9. Toda tabela nova entra em `TABELAS_DADOS` (db.ts) para ir no backup, e no `DadosProvider`.
+10. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
 
 ## Checklist antes de publicar qualquer mudança
 - `npx tsc -b`, `npx vitest run`, `npx eslint src` sem erros.

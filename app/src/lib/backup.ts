@@ -1,42 +1,25 @@
-import { db, getConfig, setConfig, type Config } from './db';
+import { db, getConfig, setConfig, TABELAS_DADOS, type Config, type NomeTabela } from './db';
 import { hojeISO } from './format';
 
-const VERSAO = 1;
+const VERSAO = 2;
 
 export type Backup = {
   app: 'calhas-andrade';
   versao: number;
   exportadoEm: string;
-  dados: {
-    clientes: unknown[];
-    calheiros: unknown[];
-    orcamentos: unknown[];
-    lancamentos: unknown[];
-    visitas?: unknown[];
-    contasFixas?: unknown[];
-    config: Partial<Config>;
-  };
+  dados: Partial<Record<NomeTabela, unknown[]>> & { config: Partial<Config> };
 };
+
+const tabela = (n: NomeTabela) => db.table(n);
 
 export async function gerarBackup(): Promise<File> {
   const cfg = await getConfig();
-  // o PIN não vai no backup
+  // o PIN e o Face ID não vão no backup (são deste aparelho)
   const { pinHash: _h, pinSalt: _s, faceIdCred: _f, ...configSemPin } = cfg;
   void _h; void _s; void _f;
-  const b: Backup = {
-    app: 'calhas-andrade',
-    versao: VERSAO,
-    exportadoEm: new Date().toISOString(),
-    dados: {
-      clientes: await db.clientes.toArray(),
-      calheiros: await db.calheiros.toArray(),
-      orcamentos: await db.orcamentos.toArray(),
-      lancamentos: await db.lancamentos.toArray(),
-      visitas: await db.visitas.toArray(),
-      contasFixas: await db.contasFixas.toArray(),
-      config: configSemPin,
-    },
-  };
+  const dados = { config: configSemPin } as Backup['dados'];
+  for (const n of TABELAS_DADOS) dados[n] = await tabela(n).toArray();
+  const b: Backup = { app: 'calhas-andrade', versao: VERSAO, exportadoEm: new Date().toISOString(), dados };
   return new File([JSON.stringify(b)], `backup-calhas-andrade-${hojeISO()}.json`, { type: 'application/json' });
 }
 
@@ -58,23 +41,20 @@ export async function lerBackup(file: File): Promise<Backup> {
 
 export async function restaurarBackup(b: Backup) {
   const cfg = await getConfig();
-  await db.transaction('rw', [db.clientes, db.calheiros, db.orcamentos, db.lancamentos, db.visitas, db.contasFixas, db.config], async () => {
-    await Promise.all([db.clientes.clear(), db.calheiros.clear(), db.orcamentos.clear(), db.lancamentos.clear(), db.visitas.clear(), db.contasFixas.clear()]);
-    await db.clientes.bulkPut(b.dados.clientes as never[]);
-    await db.calheiros.bulkPut(b.dados.calheiros as never[]);
-    await db.orcamentos.bulkPut(b.dados.orcamentos as never[]);
-    await db.lancamentos.bulkPut(b.dados.lancamentos as never[]);
-    await db.visitas.bulkPut((b.dados.visitas ?? []) as never[]);
-    await db.contasFixas.bulkPut((b.dados.contasFixas ?? []) as never[]);
+  await db.transaction('rw', [...TABELAS_DADOS.map(tabela), db.config], async () => {
+    for (const n of TABELAS_DADOS) {
+      await tabela(n).clear();
+      await tabela(n).bulkPut((b.dados[n] ?? []) as never[]);
+    }
     await db.config.put({ key: 'app', value: { ...cfg, ...b.dados.config, pinHash: cfg.pinHash, pinSalt: cfg.pinSalt, faceIdCred: cfg.faceIdCred } });
   });
 }
 
 export function contarBackup(b: Backup) {
   return {
-    clientes: b.dados.clientes.length,
-    orcamentos: b.dados.orcamentos.length,
-    calheiros: b.dados.calheiros.length,
+    clientes: b.dados.clientes?.length ?? 0,
+    orcamentos: b.dados.orcamentos?.length ?? 0,
+    calheiros: b.dados.calheiros?.length ?? 0,
     visitas: b.dados.visitas?.length ?? 0,
   };
 }
