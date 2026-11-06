@@ -114,8 +114,12 @@ export type Bobina = {
   chapa: 24 | 26;
   /** ok = tem a do estoque; comprar = a do estoque foi para a produção */
   estado: 'ok' | 'comprar';
+  /** quanto ainda tem na bobina que está na produção */
+  producao?: NivelProducao;
   atualizadoEm: string;
 };
+
+export type NivelProducao = 'bastante' | 'medio' | 'afinando' | 'acabando';
 
 export type Fornecedor = {
   id: string;

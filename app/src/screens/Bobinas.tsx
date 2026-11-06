@@ -1,20 +1,19 @@
 import { useState } from 'react';
-import { db, type Fornecedor, type ItemPedido, type Pedido } from '../lib/db';
+import { db, type Fornecedor, type ItemPedido, type NivelProducao, type Pedido } from '../lib/db';
 import { go, replace } from '../lib/router';
 import { useBobinas, useConfig, useFornecedores, usePedidos, useRegistro } from '../lib/hooks';
 import { CORTES_BOBINA, CONTAS, FORMAS_PAGAMENTO, contaPadrao } from '../lib/catalog';
-import { CHAPAS, ESPESSURA, bobinasParaComprar, estadoBobina, historicoPreco, mensagemPedido, ordenarItens, resumoPedido, statusPedido, variacao } from '../lib/bobinas';
+import { CHAPAS, ESPESSURA, NIVEIS, bobinasParaComprar, estadoBobina, listaPrioridade, nivelBobina, prioridade, historicoPreco, mensagemPedido, ordenarItens, resumoPedido, statusPedido, variacao } from '../lib/bobinas';
 import { brl, dec2, fmtData, fmtDataCurta, hojeISO, iniciais, maskCNPJ, maskPhone, telLink, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { ArquivoSheet } from '../components/ArquivoSheet';
-import { alternarBobina, apagarPedido, desfazerChegada, desfazerPagamento, marcarChegou, marcarPago, montarPedido, salvarPedido } from './pedidoActions';
+import { apagarPedido, conferirBobina, desfazerChegada, desfazerPagamento, marcarChegou, marcarPago, montarPedido, salvarPedido } from './pedidoActions';
 
 // ======================= ESTOQUE =======================
 export function Bobinas() {
   const bobinas = useBobinas();
   const pedidos = usePedidos();
   const fornecedores = useFornecedores();
-  const toast = useToast();
   const [chapa, setChapa] = useState<24 | 26>(26);
   const [escolherForn, setEscolherForn] = useState(false);
   const comprar = bobinasParaComprar(bobinas, pedidos);
@@ -23,13 +22,14 @@ export function Bobinas() {
   const concluidos = pedidos.filter((p) => p.pagoEm && p.chegouEm).slice(0, 5);
   const conta = (c: 24 | 26) => CORTES_BOBINA.filter((k) => estadoBobina(bobinas, pedidos, c, k) === 'comprar').length;
 
-  const tocar = async (corte: number) => {
-    const r = await alternarBobina(chapa, corte);
-    if (r === 'pedida') toast(`O corte ${corte} já está num pedido. Ele volta sozinho quando o pedido chegar.`);
-  };
-  const novoPedido = async (fornecedorId: string | null) => {
+  const [conferir, setConferir] = useState<number | null>(null);
+  const lista = listaPrioridade(bobinas, pedidos);
+  const ultima = bobinas.reduce((m, x) => (x.atualizadoEm > m ? x.atualizadoEm : m), '');
+  const [soItens, setSoItens] = useState<ItemPedido[] | undefined>(undefined);
+  const pedir = (itens?: ItemPedido[]) => { setSoItens(itens); if (fornecedores.length > 1) setEscolherForn(true); else novoPedido(fornecedores[0]?.id ?? null, itens); };
+  const novoPedido = async (fornecedorId: string | null, itens = soItens) => {
     setEscolherForn(false);
-    const p = await montarPedido(fornecedorId);
+    const p = await montarPedido(fornecedorId, itens);
     go(`pedido/${p.id}`);
   };
 
@@ -39,30 +39,49 @@ export function Bobinas() {
       <Seg<'26' | '24'> label="Espessura" value={String(chapa) as '26' | '24'} onChange={(v) => setChapa(Number(v) as 24 | 26)}
         options={CHAPAS.map((c) => ({ value: String(c) as '26' | '24', label: <>Chapa {c} <span className="faint" style={{ fontWeight: 500 }}>{ESPESSURA[c].replace(' mm', '')}</span>{conta(c) > 0 && <span className="c">{conta(c)}</span>}</> }))} />
       <div className="legend" style={{ flexWrap: 'wrap' }}>
-        <span><i style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)' }} />Tem no estoque</span>
-        <span><i style={{ background: 'var(--red-soft)', border: '1px solid var(--red)' }} />Comprar</span>
-        <span><i style={{ background: 'var(--info-soft)', border: '1px solid var(--info)' }} />Já pedida</span>
+        <span><i style={{ background: 'var(--red)', border: 0 }} />Urgente</span>
+        <span><i style={{ background: 'var(--red-soft)', border: '1px solid var(--red)' }} />Repor</span>
+        <span><i style={{ background: 'var(--warn-soft)', border: '1px solid var(--warn)' }} />De olho</span>
+        <span><i style={{ background: 'var(--info-soft)', border: '1px solid var(--info)' }} />Pedida</span>
       </div>
       <div className="grid-b">
         {CORTES_BOBINA.map((corte) => {
-          const e = estadoBobina(bobinas, pedidos, chapa, corte);
+          const pr = prioridade(bobinas, pedidos, chapa, corte);
+          const nv = NIVEIS.find((n) => n.k === nivelBobina(bobinas, chapa, corte))!;
+          const semEstoque = estadoBobina(bobinas, pedidos, chapa, corte) !== 'ok';
+          const rot = { urgente: 'Urgente', repor: 'Repor', olho: 'De olho', pedida: 'Pedida', ok: 'Ok' }[pr];
           return (
-            <button key={corte} className={`bob ${e === 'comprar' ? 'buy' : e === 'pedida' ? 'ord' : ''}`} onClick={() => tocar(corte)} aria-label={`Corte ${corte}, chapa ${chapa}: ${e === 'comprar' ? 'comprar' : e === 'pedida' ? 'já pedida' : 'tem no estoque'}`}>
-              <b>{corte}</b><span>{e === 'comprar' ? 'Comprar' : e === 'pedida' ? 'Pedida' : 'Ok'}</span>
+            <button key={corte} className={`bob p-${pr}`} onClick={() => setConferir(corte)} aria-label={`Corte ${corte}: ${rot}, produção ${nv.l.toLowerCase()}, ${semEstoque ? 'sem' : 'com'} estoque`}>
+              <b>{corte}</b>
+              <span className="nivel" aria-hidden="true">{[1, 2, 3, 4].map((i) => <i key={i} className={i <= nv.barras ? 'on' : ''} />)}</span>
+              <span>{rot}</span>
             </button>
           );
         })}
       </div>
-      <p className="hint" style={{ margin: '-6px 2px 0' }}>Toque na bobina quando a do estoque for para a produção. Toque de novo se marcou errado. Os cortes de 70 a 115 saem do 120.</p>
+      <p className="hint" style={{ margin: '-6px 2px 0' }}>Toque na bobina para conferir: se tem a do estoque e quanto resta na da produção (os tracinhos). {ultima ? `Última conferência: ${fmtData(ultima.slice(0, 10))}.` : ''}</p>
 
-      {comprar.length > 0 && (
-        <div className="card pad stack-s">
-          <div className="hrow between"><b>Para comprar</b><span className="small faint">{comprar.length} bobina{comprar.length > 1 ? 's' : ''}</span></div>
-          <div className="small muted">{ordenarItens(comprar).map((i) => `${i.corte} (ch. ${i.chapa})`).join(' · ')}</div>
-          {rascunho ? (
-            <button className="btn block primary" onClick={async () => { await salvarPedido(rascunho.id, { itens: [...rascunho.itens, ...comprar] }); go(`pedido/${rascunho.id}`); }}><Icon name="plus" />Colocar no pedido nº {rascunho.numero}</button>
-          ) : (
-            <button className="btn block primary" onClick={() => (fornecedores.length > 1 ? setEscolherForn(true) : novoPedido(fornecedores[0]?.id ?? null))}><Icon name="wa" />Montar pedido</button>
+      {(lista.urgente.length > 0 || lista.repor.length > 0 || lista.olho.length > 0) && (
+        <div className="card list">
+          <div className="kv"><b style={{ fontFamily: 'var(--f-display)' }}>Prioridade de compra</b></div>
+          {([['urgente', 'Urgente', 'Sem estoque e a da produção afinando/acabando', 'red'], ['repor', 'Repor o estoque', 'Sem estoque, mas a da produção ainda tem bastante', 'warn'], ['olho', 'Ficar de olho', 'Tem no estoque, mas a da produção está acabando', 'mute']] as const).map(([k, t, sub, cor]) => lista[k].length > 0 && (
+            <div key={k} className="row" style={{ alignItems: 'flex-start' }}>
+              <div className={`ic ${cor}`}><Icon name={k === 'olho' ? 'clock' : 'alert'} /></div>
+              <div className="main"><div className="t">{t} · {lista[k].length}</div><div className="s" style={{ whiteSpace: 'normal' }}>{sub}</div>
+                <div className="small" style={{ marginTop: 4, fontWeight: 600 }}>{ordenarItens(lista[k]).map((i) => `${i.corte}${i.chapa === 24 ? ' (ch. 24)' : ''}`).join(' · ')}</div></div>
+            </div>
+          ))}
+          {comprar.length > 0 && (
+            <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+              {rascunho ? (
+                <button className="btn block primary" onClick={async () => { await salvarPedido(rascunho.id, { itens: [...rascunho.itens, ...comprar] }); go(`pedido/${rascunho.id}`); }}><Icon name="plus" />Colocar no pedido nº {rascunho.numero}</button>
+              ) : (
+                <>
+                  {lista.urgente.length > 0 && lista.urgente.length < comprar.length && <button className="btn block primary" onClick={() => pedir(lista.urgente)}><Icon name="wa" />Pedido só dos urgentes ({lista.urgente.length})</button>}
+                  <button className={`btn block ${lista.urgente.length > 0 && lista.urgente.length < comprar.length ? '' : 'primary'}`} onClick={() => pedir(undefined)}><Icon name="wa" />Pedido de tudo que falta ({comprar.length})</button>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -77,6 +96,7 @@ export function Bobinas() {
       )}
       <a className="btn block ghost" href="#/bobinas/precos"><Icon name="cash" />Preço do quilo</a>
 
+      {conferir != null && <ConferirSheet chapa={chapa} corte={conferir} onClose={() => setConferir(null)} />}
       <Sheet open={escolherForn} onClose={() => setEscolherForn(false)} title="Pedir de qual fornecedor?">
         <div className="card list">
           {fornecedores.map((f) => (
@@ -446,3 +466,25 @@ function GraficoPreco({ pts }: { pts: ReturnType<typeof historicoPreco> }) {
   );
 }
 
+
+function ConferirSheet({ chapa, corte, onClose }: { chapa: 24 | 26; corte: number; onClose: () => void }) {
+  const bobinas = useBobinas();
+  const pedidos = usePedidos();
+  const e = estadoBobina(bobinas, pedidos, chapa, corte);
+  const nivel = nivelBobina(bobinas, chapa, corte);
+  return (
+    <Sheet open onClose={onClose} title={`Corte ${corte} · chapa ${chapa}`}>
+      {e === 'pedida' ? (
+        <p className="muted" style={{ margin: 0 }}>Essa bobina já está num pedido. O estoque volta sozinho quando o pedido chegar.</p>
+      ) : (
+        <div className="field"><span className="label">A do estoque</span>
+          <Seg label="Estoque" value={e === 'ok' ? 'tem' : 'nao'} onChange={(v) => conferirBobina(chapa, corte, { estado: v === 'tem' ? 'ok' : 'comprar' })} options={[{ value: 'tem', label: 'Tem no estoque' }, { value: 'nao', label: 'Não tem' }]} />
+        </div>
+      )}
+      <div className="field"><span className="label">A da produção</span>
+        <Seg<NivelProducao> label="Produção" value={nivel} onChange={(producao) => conferirBobina(chapa, corte, { producao })} options={NIVEIS.map((n) => ({ value: n.k, label: n.l }))} />
+      </div>
+      <button className="btn block primary" onClick={onClose}><Icon name="check" />Pronto</button>
+    </Sheet>
+  );
+}

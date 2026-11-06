@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bobinasParaComprar, estadoBobina, historicoPreco, mensagemPedido, statusPedido, variacao } from './bobinas';
+import { bobinasParaComprar, estadoBobina, listaPrioridade, prioridade, historicoPreco, mensagemPedido, statusPedido, variacao } from './bobinas';
 import type { Bobina, Pedido } from './db';
 
 const bob = (chapa: 24 | 26, corte: number, estado: Bobina['estado'] = 'comprar'): Bobina => ({ id: `${chapa}-${corte}`, chapa, corte, estado, atualizadoEm: '' });
@@ -54,5 +54,22 @@ describe('bobinas', () => {
   it('duas notas no mesmo dia: compara na ordem dos pedidos', () => {
     const pts = historicoPreco([ped({ numero: 2, notaEm: '2026-11-06', precoKg26: 10.1 }), ped({ numero: 1, notaEm: '2026-11-06', precoKg26: 9.6 })]);
     expect(variacao(pts, 26)?.texto).toBe('subiu 5,21%');
+  });
+});
+
+describe('prioridade de compra', () => {
+  const b = (corte: number, estado: Bobina['estado'], producao?: Bobina['producao']): Bobina => ({ id: `26-${corte}`, chapa: 26, corte, estado, producao, atualizadoEm: '' });
+  it('urgente, repor, de olho e ok', () => {
+    const bobs = [b(28, 'comprar', 'afinando'), b(10, 'comprar', 'bastante'), b(33, 'ok', 'acabando'), b(22, 'ok', 'afinando')];
+    expect(prioridade(bobs, [], 26, 28)).toBe('urgente');
+    expect(prioridade(bobs, [], 26, 10)).toBe('repor');
+    expect(prioridade(bobs, [], 26, 33)).toBe('olho');
+    expect(prioridade(bobs, [], 26, 22)).toBe('ok');
+    expect(prioridade(bobs, [], 26, 45)).toBe('ok');
+  });
+  it('lista por prioridade', () => {
+    const l = listaPrioridade([b(28, 'comprar', 'acabando'), b(30, 'comprar', 'afinando'), b(10, 'comprar')], []);
+    expect(l.urgente.map((i) => i.corte)).toEqual([28, 30]);
+    expect(l.repor.map((i) => i.corte)).toEqual([10]);
   });
 });

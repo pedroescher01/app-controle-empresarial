@@ -1,4 +1,4 @@
-import { db, type Fornecedor, type Pedido } from '../lib/db';
+import { db, type Fornecedor, type ItemPedido, type Pedido } from '../lib/db';
 import { bobinasParaComprar, estadoBobina, idBobina } from '../lib/bobinas';
 import { hojeISO, uid } from '../lib/format';
 
@@ -10,18 +10,19 @@ export async function alternarBobina(chapa: 24 | 26, corte: number) {
   const e = estadoBobina(bobinas, pedidos, chapa, corte);
   if (e === 'pedida') return e;
   const novo = e === 'ok' ? 'comprar' : 'ok';
-  await db.bobinas.put({ id: idBobina(chapa, corte), chapa, corte, estado: novo, atualizadoEm: agora() });
+  const atual = bobinas.find((b) => b.id === idBobina(chapa, corte));
+  await db.bobinas.put({ ...atual, id: idBobina(chapa, corte), chapa, corte, estado: novo, atualizadoEm: agora() });
   return novo;
 }
 
 /** Cria um pedido "a pedir" com todas as bobinas marcadas para comprar. */
-export async function montarPedido(fornecedorId: string | null): Promise<Pedido> {
+export async function montarPedido(fornecedorId: string | null, so?: ItemPedido[]): Promise<Pedido> {
   const [bobinas, pedidos] = await Promise.all([db.bobinas.toArray(), db.pedidos.toArray()]);
   const p: Pedido = {
     id: uid(),
     numero: pedidos.reduce((m, x) => Math.max(m, x.numero), 0) + 1,
     fornecedorId,
-    itens: bobinasParaComprar(bobinas, pedidos),
+    itens: so ?? bobinasParaComprar(bobinas, pedidos),
     observacoes: '',
     pedidoEm: null, notaEm: null, chegouEm: null, pagoEm: null,
     valorTotal: null, pesoKg: null, precoKg26: null, precoKg24: null,
@@ -38,7 +39,7 @@ export const salvarPedido = (id: string, patch: Partial<Pedido>) => db.pedidos.u
 export async function marcarChegou(p: Pedido, data = hojeISO()) {
   await db.transaction('rw', db.pedidos, db.bobinas, async () => {
     await db.pedidos.update(p.id, { chegouEm: data, atualizadoEm: agora() });
-    await db.bobinas.bulkPut(p.itens.map((i) => ({ id: idBobina(i.chapa, i.corte), chapa: i.chapa, corte: i.corte, estado: 'ok' as const, atualizadoEm: agora() })));
+    await guardarEstoque(p, 'ok');
   });
 }
 
@@ -46,7 +47,7 @@ export async function marcarChegou(p: Pedido, data = hojeISO()) {
 export async function desfazerChegada(p: Pedido) {
   await db.transaction('rw', db.pedidos, db.bobinas, async () => {
     await db.pedidos.update(p.id, { chegouEm: null, atualizadoEm: agora() });
-    await db.bobinas.bulkPut(p.itens.map((i) => ({ id: idBobina(i.chapa, i.corte), chapa: i.chapa, corte: i.corte, estado: 'comprar' as const, atualizadoEm: agora() })));
+    await guardarEstoque(p, 'comprar');
   });
 }
 
@@ -75,4 +76,16 @@ export async function apagarPedido(p: Pedido) {
     await db.lancamentos.where('pedidoId').equals(p.id).delete();
     await db.pedidos.delete(p.id);
   });
+}
+
+/** Muda só o "tem no estoque" das bobinas do pedido, sem mexer no nível da produção. */
+async function guardarEstoque(p: Pedido, estado: 'ok' | 'comprar') {
+  const atuais = await db.bobinas.bulkGet(p.itens.map((i) => idBobina(i.chapa, i.corte)));
+  await db.bobinas.bulkPut(p.itens.map((i, k) => ({ ...atuais[k], id: idBobina(i.chapa, i.corte), chapa: i.chapa, corte: i.corte, estado, atualizadoEm: agora() })));
+}
+
+/** Conferência: estoque e nível da produção de uma bobina. */
+export async function conferirBobina(chapa: 24 | 26, corte: number, patch: { estado?: 'ok' | 'comprar'; producao?: import('../lib/db').NivelProducao }) {
+  const atual = await db.bobinas.get(idBobina(chapa, corte));
+  await db.bobinas.put({ estado: 'ok', ...atual, ...patch, id: idBobina(chapa, corte), chapa, corte, atualizadoEm: agora() });
 }

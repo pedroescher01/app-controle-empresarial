@@ -1,4 +1,4 @@
-import type { Bobina, Fornecedor, ItemPedido, Pedido } from './db';
+import type { Bobina, Fornecedor, ItemPedido, NivelProducao, Pedido } from './db';
 import { CORTES_BOBINA } from './catalog';
 import { dec2, fmtData } from './format';
 
@@ -91,3 +91,39 @@ export const resumoPedido = (p: Pedido) => {
   const n = p.itens.reduce((s, i) => s + i.quantidade, 0);
   return `${n} bobina${n === 1 ? '' : 's'}${p.pedidoEm ? ` · pedido em ${fmtData(p.pedidoEm)}` : ''}`;
 };
+
+// ---------- prioridade de compra ----------
+export const NIVEIS: { k: NivelProducao; l: string; barras: number }[] = [
+  { k: 'bastante', l: 'Bastante', barras: 4 },
+  { k: 'medio', l: 'Médio', barras: 3 },
+  { k: 'afinando', l: 'Afinando', barras: 2 },
+  { k: 'acabando', l: 'Acabando', barras: 1 },
+];
+
+/**
+ * urgente = não tem no estoque e a da produção está afinando/acabando
+ * repor   = não tem no estoque, mas a da produção ainda tem bastante/médio
+ * olho    = tem no estoque, mas a da produção está acabando (logo abre a do estoque)
+ */
+export type Prioridade = 'pedida' | 'urgente' | 'repor' | 'olho' | 'ok';
+
+export function prioridade(bobinas: Bobina[], pedidos: Pedido[], chapa: 24 | 26, corte: number): Prioridade {
+  const e = estadoBobina(bobinas, pedidos, chapa, corte);
+  if (e === 'pedida') return 'pedida';
+  const nivel = bobinas.find((b) => b.id === idBobina(chapa, corte))?.producao ?? 'bastante';
+  if (e === 'comprar') return nivel === 'afinando' || nivel === 'acabando' ? 'urgente' : 'repor';
+  return nivel === 'acabando' ? 'olho' : 'ok';
+}
+
+export const nivelBobina = (bobinas: Bobina[], chapa: 24 | 26, corte: number): NivelProducao =>
+  bobinas.find((b) => b.id === idBobina(chapa, corte))?.producao ?? 'bastante';
+
+export function listaPrioridade(bobinas: Bobina[], pedidos: Pedido[]) {
+  const out: Record<Exclude<Prioridade, 'ok'>, ItemPedido[]> = { urgente: [], repor: [], olho: [], pedida: [] };
+  for (const chapa of CHAPAS)
+    for (const corte of CORTES_BOBINA) {
+      const p = prioridade(bobinas, pedidos, chapa, corte);
+      if (p !== 'ok') out[p].push({ chapa, corte, quantidade: 1 });
+    }
+  return out;
+}

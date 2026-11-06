@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNuvem, useBobinas, useConfig, useContasFixas, useLancamentos, useOrcamentos, usePedidos, useVisitas } from '../lib/hooks';
 import { contasProximas } from '../lib/financeiro';
-import { bobinasParaComprar, statusPedido } from '../lib/bobinas';
+import { bobinasParaComprar, listaPrioridade, statusPedido } from '../lib/bobinas';
 import { calcular, resumoPagamentos, statusVisual } from '../lib/calc';
 import { brl, dataExtenso, diasEntre, fmtData, haDias, hojeISO, nomeMes, waLink } from '../lib/format';
 import { go } from '../lib/router';
@@ -20,7 +20,9 @@ export function Inicio() {
   const visitasHoje = visitas.filter((v) => v.data === hoje);
   const lancamentos = useLancamentos();
   const pedidos = usePedidos();
-  const paraComprar = bobinasParaComprar(useBobinas(), pedidos);
+  const bobinasTodas = useBobinas();
+  const paraComprar = bobinasParaComprar(bobinasTodas, pedidos);
+  const prio = listaPrioridade(bobinasTodas, pedidos);
   const pedidosAtencao = pedidos.filter((p) => p.chegouEm && !p.pagoEm);
   const contasVencendo = contasProximas(useContasFixas(), lancamentos, 3);
   const recebidoMes = lancamentos.filter((l) => l.tipo === 'entrada' && l.data.startsWith(mesISO)).reduce((s, l) => s + l.valor, 0);
@@ -106,8 +108,11 @@ export function Inicio() {
             ))}
             {paraComprar.length > 0 && (
               <a className="row" href="#/bobinas">
-                <div className="ic mute"><Icon name="coil" /></div>
-                <div className="main"><div className="t">{paraComprar.length} bobina{paraComprar.length > 1 ? 's' : ''} para comprar</div><div className="s">{paraComprar.slice(0, 5).map((i) => `${i.corte} (ch. ${i.chapa})`).join(' · ')}</div></div>
+                <div className={`ic ${prio.urgente.length ? 'red' : 'mute'}`}><Icon name="coil" /></div>
+                <div className="main">
+                  <div className="t">{prio.urgente.length ? `${prio.urgente.length} bobina${prio.urgente.length > 1 ? 's' : ''} urgente${prio.urgente.length > 1 ? 's' : ''}` : `${paraComprar.length} bobina${paraComprar.length > 1 ? 's' : ''} para repor`}</div>
+                  <div className="s">{prio.urgente.length ? `${prio.urgente.map((i) => i.corte).join(', ')} · e mais ${prio.repor.length} para repor` : paraComprar.slice(0, 6).map((i) => i.corte).join(' · ')}</div>
+                </div>
                 <Icon name="chev" className="chev" />
               </a>
             )}
