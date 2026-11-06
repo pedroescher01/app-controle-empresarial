@@ -14,6 +14,7 @@ import { ContasFixas, Financeiro, FinanceiroAno } from './screens/Financeiro';
 import { Bobinas, Fornecedores, PedidoTela, PrecoKg } from './screens/Bobinas';
 import { Juntar } from './screens/Juntar';
 import { Nuvem } from './screens/Nuvem';
+import { Avisos } from './screens/Avisos';
 import { BackupTela, Calheiros, Empresa, Mais, Precos, TrocarPin } from './screens/Mais';
 
 const BLOQUEIO_MS = 5 * 60 * 1000;
@@ -139,7 +140,7 @@ function Shell({ onLock }: { onLock: () => void }) {
       break;
     case 'mais':
       aba = 'mais';
-      tela = b === 'precos' ? <Precos /> : b === 'calheiros' ? <Calheiros /> : b === 'backup' ? <BackupTela /> : b === 'empresa' ? <Empresa /> : b === 'pin' ? <TrocarPin /> : b === 'nuvem' ? <Nuvem /> : <Mais onLock={onLock} />;
+      tela = b === 'precos' ? <Precos /> : b === 'calheiros' ? <Calheiros /> : b === 'backup' ? <BackupTela /> : b === 'empresa' ? <Empresa /> : b === 'pin' ? <TrocarPin /> : b === 'nuvem' ? <Nuvem /> : b === 'avisos' ? <Avisos /> : <Mais onLock={onLock} />;
       break;
     default: tela = <Inicio />;
   }

@@ -16,6 +16,10 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
 - `lib/nuvem.ts`: o iPhone continua sendo o principal (Dexie); sincroniza ao mudar algo, ao abrir/voltar e a cada 5 min.
   PIN, Face ID e último backup NUNCA vão para a nuvem.
 - Depois que o Pedro criar a conta dele: fechar o cadastro (`disable_signup: true` na config de auth).
+- Avisos: função `supabase/functions/avisos` (deploy pela API: POST /v1/projects/{ref}/functions/deploy?slug=avisos).
+  pg_cron chama às 10:30 e 21:30 UTC (7h30 e 18h30 de Brasília). Segredos VAPID_PUBLIC/VAPID_PRIVATE/CRON_SECRET ficam no Supabase.
+  `?simular=1&hoje=AAAA-MM-DD` devolve os textos sem mandar. No app: `public/sw.js` + Mais → Avisos.
+  O pedido de permissão (`Notification.requestPermission`) tem que sair direto do toque, igual ao Face ID.
 - Teste de 2 aparelhos: criar usuário de teste, conferir, e APAGAR o usuário de teste no fim.
 
 ## Erros já corrigidos — NÃO repetir (conferir em toda tela nova)

@@ -4,8 +4,10 @@ import App from './App';
 import { DadosProvider } from './lib/hooks';
 import './styles.css';
 import { iniciarNuvem } from './lib/nuvem';
+import { registrarReceptor } from './lib/avisos';
 
 iniciarNuvem();
+registrarReceptor();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
