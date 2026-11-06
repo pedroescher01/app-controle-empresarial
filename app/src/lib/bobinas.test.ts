@@ -73,3 +73,34 @@ describe('prioridade de compra', () => {
     expect(l.repor.map((i) => i.corte)).toEqual([10]);
   });
 });
+
+describe('peso das bobinas', () => {
+  const nota = (id: string, itens: Pedido['itens'], precoKg26 = 10) => ped({ id, numero: Number(id.slice(1)), itens, notaEm: '2026-10-01', pedidoEm: '2026-09-28', chegouEm: '2026-10-02', precoKg26 });
+  const hist = [
+    nota('p1', [{ chapa: 26, corte: 33, quantidade: 2, pesos: [300, 310] }, { chapa: 26, corte: 50, quantidade: 1, pesos: [460] }]),
+    nota('p2', [{ chapa: 26, corte: 33, quantidade: 1, pesos: [305] }], 11),
+  ];
+  it('média, mínimo e máximo por corte', async () => {
+    const { pesosPorCorte } = await import('./bobinas');
+    expect(pesosPorCorte(hist)).toEqual([
+      { chapa: 26, corte: 33, media: 305, min: 300, max: 310, n: 3 },
+      { chapa: 26, corte: 50, media: 460, min: 460, max: 460, n: 1 },
+    ]);
+  });
+  it('corte sem histórico usa a largura; aviso de bobina fora do normal', async () => {
+    const { pesosPorCorte, pesoEsperado, foraDoNormal } = await import('./bobinas');
+    const ps = pesosPorCorte(hist);
+    const e = pesoEsperado(ps, 26, 40)!;
+    expect(e.pelaLargura).toBe(true);
+    expect(Math.round(e.kg)).toBe(Math.round(((305 * 3 + 460) / (33 * 3 + 50)) * 40));
+    expect(foraDoNormal(ps, 26, 33, 312)).toBeNull();
+    expect(foraDoNormal(ps, 26, 33, 250)?.texto).toBe('veio leve: 18,03% abaixo da média (305 kg)');
+  });
+  it('previsão do pedido com o último preço do kg', async () => {
+    const { previsaoPedido } = await import('./bobinas');
+    const r = previsaoPedido(ped({ id: 'novo', itens: [{ chapa: 26, corte: 33, quantidade: 2 }, { chapa: 24, corte: 50, quantidade: 1 }] }), hist)!;
+    expect(r.kg).toBe(610);
+    expect(r.valor).toBe(6710);
+    expect(r.semPeso).toBe(1);
+  });
+});

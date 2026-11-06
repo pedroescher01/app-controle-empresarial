@@ -4,7 +4,7 @@ import { go, replace } from '../lib/router';
 import { useBobinas, useConfig, useFornecedores, usePedidos, useRegistro } from '../lib/hooks';
 import { CORTES_BOBINA, CONTAS, FORMAS_PAGAMENTO, contaPadrao } from '../lib/catalog';
 import { BobinaDefs, BobinaIcone } from '../components/Bobina';
-import { CHAPAS, ESPESSURA, NIVEIS, bobinasParaComprar, estadoBobina, listaPrioridade, nivelBobina, prioridade, historicoPreco, mensagemPedido, ordenarItens, resumoPedido, statusPedido, variacao } from '../lib/bobinas';
+import { CHAPAS, ESPESSURA, NIVEIS, bobinasParaComprar, estadoBobina, listaPrioridade, nivelBobina, prioridade, historicoPreco, mensagemPedido, ordenarItens, resumoPedido, statusPedido, variacao, foraDoNormal, pesosPorCorte, previsaoPedido } from '../lib/bobinas';
 import { brl, dec2, fmtData, fmtDataCurta, hojeISO, iniciais, maskCNPJ, maskPhone, telLink, uid, waLink } from '../lib/format';
 import { Confirm, DecimalInput, Empty, Icon, MoneyInput, PhoneInput, Pill, Seg, Sheet, TopBar, useToast } from '../components/ui';
 import { ArquivoSheet } from '../components/ArquivoSheet';
@@ -96,7 +96,7 @@ export function Bobinas() {
           {[...abertos, ...concluidos].map((p) => <PedidoLinha key={p.id} p={p} f={fornecedores.find((x) => x.id === p.fornecedorId)} />)}
         </div>
       )}
-      <a className="btn block ghost" href="#/bobinas/precos"><Icon name="cash" />Preço do quilo</a>
+      <a className="btn block ghost" href="#/bobinas/precos"><Icon name="cash" />Preço do quilo e peso das bobinas</a>
 
       {conferir != null && <ConferirSheet chapa={chapa} corte={conferir} onClose={() => setConferir(null)} />}
       <Sheet open={escolherForn} onClose={() => setEscolherForn(false)} title="Pedir de qual fornecedor?">
@@ -134,6 +134,8 @@ export function PedidoTela({ id }: { id: string }) {
 
 function PedidoDetalhe({ p }: { p: Pedido }) {
   const fornecedores = useFornecedores();
+  const pedidos = usePedidos();
+  const prev = !p.notaEm ? previsaoPedido(p, pedidos) : null;
   const cfg = useConfig();
   const toast = useToast();
   const f = fornecedores.find((x) => x.id === p.fornecedorId);
@@ -163,7 +165,7 @@ function PedidoDetalhe({ p }: { p: Pedido }) {
         {ordenarItens(p.itens).map((i) => (
           <div key={`${i.chapa}-${i.corte}`} className="row">
             <div className="q-box"><b>{i.corte}</b><small>cm</small></div>
-            <div className="main"><div className="t">Corte {i.corte} · chapa {i.chapa}</div><div className="s">{ESPESSURA[i.chapa]} · galvanizada</div></div>
+            <div className="main"><div className="t">Corte {i.corte} · chapa {i.chapa}</div><div className="s">{i.pesos?.some((k) => k > 0) ? i.pesos.filter((k) => k > 0).map((k) => `${dec2(k).replace(/,00$/, '')} kg`).join(' · ') : `${ESPESSURA[i.chapa]} · galvanizada`}</div></div>
             {editavel ? (
               <div className="stepper">
                 <button aria-label="Menos uma" onClick={() => setItens(i.quantidade > 1 ? p.itens.map((x) => (x === i ? { ...x, quantidade: x.quantidade - 1 } : x)) : p.itens.filter((x) => x !== i))}>{i.quantidade > 1 ? '−' : <Icon name="trash" style={{ width: 15, height: 15 }} />}</button>
@@ -175,6 +177,13 @@ function PedidoDetalhe({ p }: { p: Pedido }) {
         ))}
         {editavel && <div className="row"><button className="btn block ghost" onClick={() => setSheet('add')}><Icon name="plus" />Adicionar bobina</button></div>}
       </div>
+      {prev && (
+        <div className="card pad stack-s" style={{ gap: 4, boxShadow: 'none' }}>
+          <div className="small muted" style={{ fontWeight: 600 }}>Previsão pelas notas anteriores</div>
+          <div style={{ fontFamily: 'var(--f-display)', fontWeight: 750, fontSize: 20 }}>≈ {dec2(Math.round(prev.kg)).replace(/,\d\d$/, '')} kg{prev.valor != null && <> · ≈ {brl(Math.round(prev.valor))}</>}</div>
+          <div className="small faint">{[prev.valor != null ? 'Peso médio de cada corte × último preço do kg' : 'Peso médio de cada corte (falta o preço do kg para o valor)', prev.pelaLargura ? 'corte sem histórico estimado pela largura' : '', prev.semPeso ? `${prev.semPeso} bobina${prev.semPeso > 1 ? 's' : ''} sem histórico de peso` : ''].filter(Boolean).join(' · ')}</div>
+        </div>
+      )}
 
       <div className="card form-card">
         <div className="field"><label htmlFor="pd-obs">Observações</label><textarea id="pd-obs" className="input" value={obs} onChange={(e) => setObs(e.target.value)} onBlur={() => obs !== p.observacoes && salvarPedido(p.id, { observacoes: obs })} placeholder="Ex.: entregar de manhã" style={{ minHeight: 64 }} /></div>
@@ -264,19 +273,55 @@ function NotaSheet({ p, chapas, onClose }: { p: Pedido; chapas: (24 | 26)[]; onC
   const [k26, setK26] = useState<number | null>(p.precoKg26);
   const [k24, setK24] = useState<number | null>(p.precoKg24);
   const [data, setData] = useState(p.notaEm ?? hojeISO());
+  const pedidos = usePedidos();
+  const hist = pesosPorCorte(pedidos.filter((x) => x.id !== p.id));
+  const itens = ordenarItens(p.itens);
+  const [pesos, setPesos] = useState<Record<string, number[]>>(() => Object.fromEntries(itens.map((i) => [`${i.chapa}-${i.corte}`, Array.from({ length: i.quantidade }, (_, k) => i.pesos?.[k] ?? 0)])));
+  const somaPesos = Object.values(pesos).flat().reduce((a, b) => a + (b || 0), 0);
+  const setPesoBob = (k: string, n: number, kg: number) => {
+    const novo = { ...pesos, [k]: pesos[k].map((x, j) => (j === n ? kg : x)) };
+    setPesos(novo);
+    setPeso(Object.values(novo).flat().reduce((a, b) => a + (b || 0), 0));
+  };
   const sugestao = valor && peso ? valor / peso : null;
   return (
     <Sheet open onClose={onClose} title="Nota do fornecedor">
       <div className="field"><label htmlFor="nt-v">Valor total da nota</label><MoneyInput id="nt-v" value={valor} onChange={setValor} allowEmpty autoFocus /></div>
       <div className="grid2">
-        <div className="field"><label htmlFor="nt-kg">Peso (kg) <span className="faint">opcional</span></label><DecimalInput id="nt-kg" value={peso} onChange={setPeso} placeholder="0" /></div>
+        <div className="field"><label htmlFor="nt-kg">Peso total (kg)</label><DecimalInput key={somaPesos} id="nt-kg" value={peso} onChange={setPeso} placeholder="0" /></div>
         <div className="field"><label htmlFor="nt-d">Data da nota</label><input id="nt-d" type="date" className="input" value={data} onChange={(e) => setData(e.target.value || hojeISO())} /></div>
       </div>
+      {itens.length > 0 && (
+        <div className="field">
+          <span className="label">Peso de cada bobina (kg)</span>
+          <div className="card list" style={{ boxShadow: 'none' }}>
+            {itens.map((i) => {
+              const k = `${i.chapa}-${i.corte}`;
+              const media = hist.find((h) => h.chapa === i.chapa && h.corte === i.corte);
+              return (
+                <div key={k} className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                  <div className="hrow between"><b>Corte {i.corte} · chapa {i.chapa}</b><span className="small faint">{media ? `média ${dec2(media.media).replace(/,00$/, '')} kg` : 'sem histórico ainda'}</span></div>
+                  {pesos[k].map((kg, n) => {
+                    const fora = foraDoNormal(hist, i.chapa, i.corte, kg);
+                    return (
+                      <div key={n} className="stack-s" style={{ gap: 2 }}>
+                        <DecimalInput aria-label={`Peso da bobina ${n + 1} do corte ${i.corte}`} value={kg} onChange={(v) => setPesoBob(k, n, v)} placeholder={i.quantidade > 1 ? `Bobina ${n + 1}` : 'Peso'} />
+                        {fora && <span className="small" style={{ color: fora.pct < 0 ? 'var(--red)' : 'var(--warn)', fontWeight: 600 }}>{fora.texto.charAt(0).toUpperCase() + fora.texto.slice(1)}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+          <span className="hint">Com o peso de cada uma, o app faz a média de cada corte e prevê o próximo pedido.</span>
+        </div>
+      )}
       {(chapas.includes(26) || !chapas.length) && <div className="field"><label htmlFor="nt-26">Preço do kg · chapa 26</label><MoneyInput id="nt-26" value={k26} onChange={setK26} allowEmpty /></div>}
       {chapas.includes(24) && <div className="field"><label htmlFor="nt-24">Preço do kg · chapa 24</label><MoneyInput id="nt-24" value={k24} onChange={setK24} allowEmpty /></div>}
       {sugestao && !k26 && !k24 ? <button className="link small" style={{ alignSelf: 'flex-start' }} onClick={() => (chapas.includes(24) && !chapas.includes(26) ? setK24(Math.round(sugestao * 100) / 100) : setK26(Math.round(sugestao * 100) / 100))}>Usar valor ÷ peso: {brl(sugestao)}/kg</button> : null}
       <span className="hint">O preço do kg vai para o histórico, para ver se a bobina está subindo.</span>
-      <button className="btn block primary" disabled={!valor} onClick={async () => { await salvarPedido(p.id, { valorTotal: valor, pesoKg: peso || null, precoKg26: k26, precoKg24: k24, notaEm: data }); toast('Nota registrada'); onClose(); }}><Icon name="check" />Salvar nota</button>
+      <button className="btn block primary" disabled={!valor} onClick={async () => { await salvarPedido(p.id, { valorTotal: valor, pesoKg: peso || null, precoKg26: k26, precoKg24: k24, notaEm: data, itens: p.itens.map((i) => { const ps = pesos[`${i.chapa}-${i.corte}`] ?? []; return ps.some((x) => x > 0) ? { ...i, pesos: ps } : { ...i, pesos: undefined }; }) }); toast('Nota registrada'); onClose(); }}><Icon name="check" />Salvar nota</button>
     </Sheet>
   );
 }
@@ -391,9 +436,10 @@ export function PrecoKg() {
   const pedidos = usePedidos();
   const fornecedores = useFornecedores();
   const pts = historicoPreco(pedidos);
+  const pesos = pesosPorCorte(pedidos);
   return (
     <section className="stack">
-      <TopBar onBack={() => go('bobinas')} backLabel="Bobinas" eyebrow="Histórico das notas" title="Preço do quilo" />
+      <TopBar onBack={() => go('bobinas')} backLabel="Bobinas" eyebrow="Histórico das notas" title="Preço e peso" />
       {!pts.length ? (
         <Empty icon="cash" title="Ainda sem preços" text="Quando você registrar a nota de um pedido com o preço do kg, ele aparece aqui num gráfico." />
       ) : (
@@ -420,6 +466,19 @@ export function PrecoKg() {
             ))}
           </div>
         </>
+      )}
+      <div className="h2"><h2>Peso médio da bobina</h2></div>
+      {!pesos.length ? (
+        <div className="card pad small muted">Quando você registrar o peso de cada bobina na nota, aparece aqui a média de cada corte (e o mais leve e o mais pesado que já veio).</div>
+      ) : (
+        <div className="card list">
+          {pesos.map((x) => (
+            <div key={`${x.chapa}-${x.corte}`} className="row">
+              <div className="q-box"><b>{x.corte}</b><small>cm</small></div>
+              <div className="main"><div className="t">{dec2(Math.round(x.media)).replace(/,\d\d$/, '')} kg · chapa {x.chapa}</div><div className="s">{x.n} bobina{x.n > 1 ? 's' : ''}{x.n > 1 ? ` · de ${dec2(x.min).replace(/,00$/, '')} a ${dec2(x.max).replace(/,00$/, '')} kg` : ''}</div></div>
+            </div>
+          ))}
+        </div>
       )}
     </section>
   );

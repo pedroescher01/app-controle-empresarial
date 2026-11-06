@@ -130,7 +130,13 @@ export type Fornecedor = {
   criadoEm: string;
 };
 
-export type ItemPedido = { corte: number; chapa: 24 | 26; quantidade: number };
+export type ItemPedido = {
+  corte: number;
+  chapa: 24 | 26;
+  quantidade: number;
+  /** peso de cada bobina que veio na nota (kg), na ordem da nota */
+  pesos?: number[];
+};
 
 export type Pedido = {
   id: string;

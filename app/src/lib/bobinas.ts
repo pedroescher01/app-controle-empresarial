@@ -127,3 +127,69 @@ export function listaPrioridade(bobinas: Bobina[], pedidos: Pedido[]) {
     }
   return out;
 }
+
+// ---------- peso das bobinas ----------
+export type PesoCorte = { chapa: 24 | 26; corte: number; media: number; min: number; max: number; n: number };
+
+/** Pesos de cada bobina já registrados nas notas, por chapa e corte. */
+export function pesosPorCorte(pedidos: Pedido[]): PesoCorte[] {
+  const m = new Map<string, number[]>();
+  for (const p of pedidos)
+    for (const i of p.itens)
+      for (const kg of i.pesos ?? []) {
+        if (!(kg > 0)) continue;
+        const k = idBobina(i.chapa, i.corte);
+        m.set(k, [...(m.get(k) ?? []), kg]);
+      }
+  return [...m.entries()]
+    .map(([k, v]) => {
+      const [chapa, corte] = k.split('-').map(Number) as [24 | 26, number];
+      return { chapa, corte, media: v.reduce((a, b) => a + b, 0) / v.length, min: Math.min(...v), max: Math.max(...v), n: v.length };
+    })
+    .sort((a, b) => b.chapa - a.chapa || a.corte - b.corte);
+}
+
+/** Quilos por centímetro de largura (média de todas as bobinas da chapa) — serve para cortes ainda sem histórico. */
+export function kgPorCm(pesos: PesoCorte[], chapa: 24 | 26): number | null {
+  let kg = 0, cm = 0;
+  for (const x of pesos) if (x.chapa === chapa) { kg += x.media * x.n; cm += x.corte * x.n; }
+  return cm ? kg / cm : null;
+}
+
+/** Peso esperado de uma bobina: média do corte; sem histórico do corte, pela largura. */
+export function pesoEsperado(pesos: PesoCorte[], chapa: 24 | 26, corte: number): { kg: number; pelaLargura: boolean } | null {
+  const x = pesos.find((p) => p.chapa === chapa && p.corte === corte);
+  if (x) return { kg: x.media, pelaLargura: false };
+  const k = kgPorCm(pesos, chapa);
+  return k ? { kg: k * corte, pelaLargura: true } : null;
+}
+
+/** Bobina fora do normal: mais de 10% de diferença da média do corte. */
+export function foraDoNormal(pesos: PesoCorte[], chapa: 24 | 26, corte: number, kg: number) {
+  const e = pesoEsperado(pesos, chapa, corte);
+  if (!e || !kg) return null;
+  const pct = ((kg - e.kg) / e.kg) * 100;
+  if (Math.abs(pct) < 10) return null;
+  return { pct, texto: `${pct < 0 ? 'veio leve' : 'veio pesada'}: ${dec2(Math.abs(pct)).replace(/,00$/, '')}% ${pct < 0 ? 'abaixo' : 'acima'} da média (${dec2(e.kg).replace(/,00$/, '')} kg)` };
+}
+
+/** Último preço do kg registrado para a chapa. */
+export const ultimoPrecoKg = (pedidos: Pedido[], chapa: 24 | 26) => historicoPreco(pedidos).filter((p) => p.chapa === chapa).pop()?.precoKg ?? null;
+
+/** Previsão de peso e valor do pedido pelas médias (ignora o próprio pedido). */
+export function previsaoPedido(p: Pedido, pedidos: Pedido[]) {
+  const outros = pedidos.filter((x) => x.id !== p.id);
+  const pesos = pesosPorCorte(outros);
+  let kg = 0, valor = 0, semPeso = 0, semPreco = false, pelaLargura = false;
+  for (const i of p.itens) {
+    const e = pesoEsperado(pesos, i.chapa, i.corte);
+    if (!e) { semPeso += i.quantidade; continue; }
+    if (e.pelaLargura) pelaLargura = true;
+    const k = e.kg * i.quantidade;
+    kg += k;
+    const preco = ultimoPrecoKg(outros, i.chapa);
+    if (preco) valor += k * preco; else semPreco = true;
+  }
+  if (!kg) return null;
+  return { kg, valor: semPreco ? null : valor, semPeso, pelaLargura };
+}
