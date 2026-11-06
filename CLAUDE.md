@@ -22,6 +22,7 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
   O pedido de permissão (`Notification.requestPermission`) tem que sair direto do toque, igual ao Face ID.
 - Teste de 2 aparelhos: criar usuário de teste, conferir, e APAGAR o usuário de teste no fim.
 
+- Gravando direto na nuvem: todo pagamento colocado em `orcamentos.pagamentos` precisa TAMBÉM de um registro em `lancamentos` (tipo entrada, categoria "Orçamento", orcamentoId e pagamentoId do pagamento). Sem isso o valor não aparece no Financeiro (aconteceu com o Marcelo, 3185).
 ## Erros já corrigidos — NÃO repetir (conferir em toda tela nova)
 1. **Barras fixas soltas no iPhone com o teclado.** Nada de novo `position: fixed; bottom: ...`.
    - Barras de baixo (abas, total): escondem com `body.kb` (teclado aberto). Toda barra nova precisa entrar nessa regra.
