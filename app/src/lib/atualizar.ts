@@ -8,7 +8,12 @@ export async function conferirAtualizacao(): Promise<boolean> {
     if (!r.ok) return false;
     const { versao } = await r.json();
     if (versao && versao !== __VERSAO__) {
-      location.reload();
+      // endereço com ?v= para o iPhone não usar a página guardada em cache (até 10 min no GitHub Pages)
+      let tentou = '';
+      try { tentou = sessionStorage.getItem('atualizando') ?? ''; } catch { /* sem storage */ }
+      if (tentou === versao && new URLSearchParams(location.search).get('v') === versao) return false; // já tentou: evita ficar recarregando
+      try { sessionStorage.setItem('atualizando', versao); } catch { /* sem storage */ }
+      location.replace(`${location.pathname}?v=${encodeURIComponent(versao)}${location.hash}`);
       return true;
     }
   } catch {
