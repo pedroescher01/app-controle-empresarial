@@ -43,7 +43,33 @@ export type Item = {
   precoUnit: number;
   precoManual?: boolean;
   condutor?: boolean;
+  /** item criado por uma peça da folha de desenho (quantidade e corte acompanham o desenho) */
+  pecaId?: string;
 };
+
+/**
+ * Peça desenhada na folha (computador). Unidade do desenho: 1 linha do caderno = 4.
+ * `pts` são os cantos da peça, `med` a medida de cada aba ("13", "17,5", "13/10" = cônica).
+ */
+export type Peca = {
+  id: string;
+  nome: string;
+  pts: [number, number][];
+  med: (string | null)[];
+  /** metragem como foi escrita: "5,30", "9,00 + 2,00", "4 × 2,50" */
+  metr: string;
+  /** posição na folha (calculada) */
+  ox: number;
+  oy: number;
+  placed: boolean;
+  /** marcações de batida começando pela outra borda */
+  flip?: boolean;
+  /** número de uma aba jogado para o outro lado (1 normal, -1 invertido) */
+  lado?: number[];
+};
+
+/** Jeito de desenhar uma peça salvo como padrão (F8 na folha). */
+export type PadraoDesenho = { id: string; nome: string; pts: [number, number][]; med: (string | null)[]; lado?: number[] };
 
 export type Pagamento = { id: string; data: string; valor: number; forma: string; conta: string; cartao?: Cartao };
 
@@ -76,6 +102,12 @@ export type Orcamento = {
   servicoPeriodo?: Periodo | null;
   /** este orçamento foi juntado em outro (id do orçamento novo) */
   juntadoNo?: string | null;
+  /** peças desenhadas na folha (computador); cada peça pronta tem um item ligado por `pecaId` */
+  pecas?: Peca[];
+  /** caneta do desenho */
+  caneta?: 'preta' | 'azul';
+  /** "jogada" ligada na folha: o "Fechar em" acompanha o desenho (soma 5% e arredonda para cima) */
+  jogadaAuto?: boolean;
   criadoEm: string;
   atualizadoEm: string;
 };
@@ -239,6 +271,8 @@ export type Config = {
   pixNoPdf: boolean;
   /** tabela de taxas da InfinitePay por bandeira e parcelas */
   taxasCartao: TabelaTaxas;
+  /** jeitos de desenhar salvos na folha de desenho (undefined = ainda os que vêm prontos) */
+  padroesDesenho?: PadraoDesenho[];
 };
 
 export const EMAIL_PADRAO = 'calhasandradeararas@gmail.com';

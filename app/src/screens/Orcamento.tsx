@@ -40,6 +40,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
   // salva sozinho — só quando VOCÊ mexe (pagamentos são gravados pelas ações próprias, não aqui)
   const timer = useRef<number>();
   const apagado = useRef(false);
+  const indoDesenhar = useRef(false);
   const pendente = useRef(false);
   const ultimaGravada = useRef(inicial.atualizadoEm);
   const gravar = useCallback(() => {
@@ -75,7 +76,8 @@ function Editor({ inicial }: { inicial: Orcamento }) {
     window.clearTimeout(timer.current);
     const a = ref.current;
     if (apagado.current) return;
-    if (!a.clienteNome.trim() && !a.itens.length && !a.pagamentos.length) db.orcamentos.delete(a.id);
+    // indo para a folha de desenho o orçamento fica, mesmo ainda vazio
+    if (!a.clienteNome.trim() && !a.itens.length && !a.pagamentos.length && !a.pecas?.length && !indoDesenhar.current) db.orcamentos.delete(a.id);
     else gravar();
   }, [gravar]);
 
@@ -168,6 +170,13 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         <button className="chip add" onClick={() => addItem(ITEM_LIVRE)}><Icon name="plus" />Outro item</button>
       </div>
 
+      {/* folha de desenho (computador): desenha as peças e elas entram aqui como itens */}
+      {!o.juntadoNo && (
+        <button className="btn block ghost" onClick={() => { indoDesenhar.current = true; go(`desenho/${o.id}`); }}>
+          <Icon name="edit" />{o.pecas?.length ? `Abrir a folha de desenho (${o.pecas.length} ${o.pecas.length === 1 ? 'peça' : 'peças'})` : 'Desenhar as peças (no computador)'}
+        </button>
+      )}
+
       {/* itens */}
       {o.itens.length ? (
         <div className={`card list ${simples ? 'internal' : ''}`}>
@@ -180,6 +189,7 @@ function Editor({ inicial }: { inicial: Orcamento }) {
                   {l.item.tipo === 'metro' && l.item.corte ? <>corte {l.item.corte} · chapa {l.item.chapa ?? 26}{l.item.corte > 65 && l.item.corte < 120 ? ' (do 120)' : ''}</> : null}
                   {l.item.condutor ? <>{qtd(l.item.quantidade / 2)} barra{l.item.quantidade / 2 === 1 ? '' : 's'} de 2 m</> : null}
                   {l.item.tipo === 'mao' ? 'Serviço' : null}
+                  {l.item.pecaId ? ' · do desenho' : null}
                   {l.ajuste ? <span className="adj"> · {l.ajuste > 0 ? '+' : '−'} {brl(Math.abs(l.ajuste))}</span> : null}
                 </small>
               </div>
@@ -207,8 +217,8 @@ function Editor({ inicial }: { inicial: Orcamento }) {
         <div className="kv" style={{ alignItems: 'center' }}>
           <div className="k"><label htmlFor="o-fechar">Fechar em</label><div className="hint">Diferença só nas calhas e rufos</div></div>
           <div className="hrow" style={{ gap: 6 }}>
-            {o.totalDesejado != null && <button className="del icon-btn" style={{ width: 32, height: 32, border: 0 }} aria-label="Tirar o fechar em" onClick={() => set({ totalDesejado: null })}><Icon name="x" style={{ width: 16, height: 16 }} /></button>}
-            <MoneyInput id="o-fechar" allowEmpty value={o.totalDesejado} onChange={(v) => set({ totalDesejado: v })} placeholder="—" style={{ width: 140, textAlign: 'right', minHeight: 40, padding: '8px 10px' }} />
+            {o.totalDesejado != null && <button className="del icon-btn" style={{ width: 32, height: 32, border: 0 }} aria-label="Tirar o fechar em" onClick={() => set({ totalDesejado: null, jogadaAuto: false })}><Icon name="x" style={{ width: 16, height: 16 }} /></button>}
+            <MoneyInput id="o-fechar" allowEmpty value={o.totalDesejado} onChange={(v) => set({ totalDesejado: v, jogadaAuto: false })} placeholder="—" style={{ width: 140, textAlign: 'right', minHeight: 40, padding: '8px 10px' }} />
           </div>
         </div>
         {r.ajusteImpossivel && <div className="kv"><span className="err">Para fechar o valor, o orçamento precisa ter calha ou rufo.</span></div>}

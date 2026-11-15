@@ -8,6 +8,7 @@ import { Lock } from './screens/Lock';
 import { Inicio } from './screens/Inicio';
 import { OrcamentosLista } from './screens/Orcamentos';
 import { OrcamentoTela } from './screens/Orcamento';
+import { DesenhoTela } from './screens/Desenho';
 import { ClienteDetalhe, ClienteForm, ClientesLista } from './screens/Clientes';
 import { VisitaForm, VisitasLista } from './screens/Visitas';
 import { ContasFixas, Financeiro, FinanceiroAno } from './screens/Financeiro';
@@ -131,6 +132,7 @@ function Shell({ onLock }: { onLock: () => void }) {
       tela = b === 'contas' ? <ContasFixas /> : b === 'ano' ? <FinanceiroAno ano={c} /> : <Financeiro mes={b === 'mes' ? c : undefined} />;
       break;
     case 'orcamento': tela = <OrcamentoTela id={b} />; aba = 'orcamentos'; barra = true; break;
+    case 'desenho': tela = <DesenhoTela id={b} />; aba = 'orcamentos'; break;
     case 'bobinas': tela = b === 'precos' ? <PrecoKg /> : <Bobinas />; aba = 'mais'; break;
     case 'pedido': tela = <PedidoTela id={b} />; aba = 'mais'; break;
     case 'calheiro': tela = <CalheiroTela id={b} />; aba = 'mais'; break;

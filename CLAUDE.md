@@ -58,6 +58,20 @@ Respostas ao Pedro: português simples, curtas, direto ao ponto.
    versão do banco quando ela muda por fora. Antes disso, uma mudança feita direto na nuvem foi perdida.
 11. Formatos sempre certos: moeda R$, teclado numérico em número, telefone com máscara, CPF/CNPJ, endereço separado.
 
+## Folha de desenho (computador)
+- Rota `#/desenho/<id do orçamento>` (`screens/Desenho.tsx`), aberta pelo botão "Desenhar as peças" no orçamento. Só mouse e teclado.
+- As peças ficam DENTRO do orçamento (`orcamento.pecas`), sem tabela nova. Cada peça pronta (todas as medidas + metragem)
+  vira um item por metro ligado por `item.pecaId` (`lib/desenho.ts → sincronizarItens`, com testes). Preço, "Fechar em", PDF,
+  pagamentos e nuvem continuam sendo os do orçamento normal. Itens digitados à mão nunca são tocados.
+- "Jogada +5%" (`orcamento.jogadaAuto`): o "Fechar em" acompanha o desenho (soma 5% e arredonda pra cima de 10 em 10).
+  Mexer no "Fechar em" na tela do orçamento desliga a jogada.
+- `desenho/motor.ts` desenha direto no SVG (sem React, sem checagem de tipos: veio pronto do protótipo). Regras que o Pedro aprovou
+  e NÃO podem mudar: o tamanho de cada aba é o que ele arrasta (nunca calculado da medida); a folha só é rearrumada quando a peça
+  termina; nada de bolinha nas pontas; número colado na aba, nunca um em cima do outro; C/ em vermelho é o corte REAL (sem arredondar);
+  batidas só com F7; na tela papel cor de café com pauta, na impressão folha branca.
+- Padrões de desenho (F8 / P) ficam em `config.padroesDesenho` e vão para a nuvem junto com as configurações.
+- Em desenvolvimento (`vite dev`) o StrictMode apaga o orçamento vazio ao abrir; testar a folha com `vite build` + `vite preview`.
+
 ## Checklist antes de publicar qualquer mudança
 - `npx tsc -b`, `npx vitest run`, `npx eslint src` sem erros.
 - Testar no Playwright com `devices['iPhone 13']`: fluxo da tela, sem erro no console, sem rolagem lateral.

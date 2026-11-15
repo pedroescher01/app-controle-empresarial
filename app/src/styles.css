@@ -321,3 +321,69 @@ a.btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
 .bob.p-olho span { color: var(--warn); }
 .bob.p-pedida { border-color: var(--info); background: var(--info-soft); }
 .bob.p-pedida span { color: var(--info); }
+
+/* ============ Folha de desenho (computador) ============ */
+.dz { position: fixed; inset: 0; z-index: 30; overflow: hidden; background: radial-gradient(120% 90% at 50% 0%, #3a2e26 0%, #261e19 55%, #1b1512 100%); font-family: var(--f-body); color: #221d19; --mao: 'Segoe Print', 'Ink Free', 'Comic Sans MS', cursive; }
+body.dz-aberta { overflow: hidden; }
+body.dz-aberta .tabs { display: none; }
+.dz-folha { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.dz.movendo .dz-folha { cursor: grab; }
+.dz-folha text { user-select: none; -webkit-user-select: none; }
+.dz-folha [data-k="med"], .dz-folha [data-k="metr"], .dz-folha [data-k="bat"] { cursor: text; }
+.dz-folha [data-k="sug"] { cursor: pointer; }
+.dz kbd { font: 600 11px/1 var(--f-body); padding: 3px 5px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, .18); background: rgba(255, 255, 255, .55); margin-left: 4px; white-space: nowrap; }
+.dz-topo { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; padding: 9px 14px; pointer-events: none; z-index: 2; flex-wrap: wrap; }
+.dz-topo > * { pointer-events: auto; }
+.dz-topo .dz-esp { flex: 1; pointer-events: none; }
+.dz-topo button { border: 0; background: rgba(20, 14, 10, .5); color: #d9cdbd; border-radius: 8px; padding: 6px 11px; font-size: 13px; font-weight: 600; cursor: pointer; opacity: .66; transition: opacity .12s, background .12s; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.dz-topo button:hover { opacity: 1; background: rgba(20, 14, 10, .85); color: #fff; }
+.dz-topo button[aria-pressed="true"] { opacity: 1; background: var(--red); color: #fff; }
+.dz-topo kbd { background: transparent; border-color: rgba(255, 255, 255, .25); font-size: 10.5px; }
+.dz-resumo { color: #cbbfae; font-size: 13px; font-variant-numeric: tabular-nums; background: rgba(20, 14, 10, .5); padding: 6px 12px; border-radius: 8px; opacity: .8; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.dz-resumo b { color: #fff; font-weight: 700; }
+.dz-resumo i { font-style: normal; color: #ffb3a8; }
+.dz-dica, .dz-aviso { position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; background: rgba(20, 14, 10, .62); color: #e6dccd; padding: 9px 16px; border-radius: 99px; font-size: 13.5px; pointer-events: none; z-index: 2; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+.dz-dica kbd { background: transparent; border-color: rgba(255, 255, 255, .3); margin: 0 2px; }
+.dz-aviso { bottom: auto; top: 64px; background: var(--red); color: #fff; white-space: normal; text-align: center; border-radius: 14px; }
+.dz .finp { position: absolute; z-index: 3; border: 0; border-bottom: 2px dashed rgba(60, 40, 20, .45); outline: 0; background: rgba(255, 250, 235, .28); padding: 0; margin: 0; font-family: var(--mao); line-height: 1.25; caret-color: var(--red); border-radius: 2px; min-height: 0; }
+.dz .finp.treme { animation: dz-treme .28s; border-bottom-color: var(--red); }
+@keyframes dz-treme { 25% { margin-left: -5px; } 75% { margin-left: 5px; } }
+.dz-fundo { position: absolute; inset: 0; background: rgba(24, 18, 14, .55); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 24px; }
+.dz-modal { background: #fffdf9; color: #221d19; border-radius: 16px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .6); width: 440px; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.dz-modal.largo { width: 780px; }
+.dz-modal header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 6px 22px; }
+.dz-modal h2 { font-family: var(--f-display); font-size: 20px; font-weight: 700; margin: 0; }
+.dz-x { border: 0; background: transparent; font-size: 24px; line-height: 1; color: #766c62; cursor: pointer; border-radius: 8px; width: 34px; height: 34px; }
+.dz-x:hover { background: rgba(0, 0, 0, .06); }
+.dz-corpo { padding: 10px 22px 22px; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+.dz-corpo p { margin: 0; }
+.dz-campo { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #766c62; }
+.dz-campo input { border: 1px solid #d5cabb; background: #fff; color: #221d19; border-radius: 9px; padding: 10px 12px; font: inherit; font-size: 16px; font-weight: 500; }
+.dz-acoes { display: flex; justify-content: flex-end; gap: 8px; }
+.dz-modal .btn { color: #221d19; background: #fff; border-color: #d5cabb; }
+.dz-modal .btn.primary { color: #fff; background: var(--red); border-color: var(--red); }
+.dz .rodape-modal, .dz .vazio { font-size: 13px; color: #766c62; }
+.dz .atalhos { display: grid; grid-template-columns: 150px 1fr; gap: 9px 16px; margin: 0; font-size: 14px; }
+.dz .atalhos dt { font-weight: 700; }
+.dz .atalhos dd { margin: 0; color: #4a423b; }
+.dz .atalhos kbd { margin: 0 1px; }
+.dz .pads { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.dz .pad { position: relative; border: 1px solid #e3dcd1; background: #e9dcc3; color: #221d19; border-radius: 12px; padding: 10px 10px 8px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; align-items: stretch; font: inherit; }
+.dz .pad:hover { border-color: var(--red); box-shadow: 0 0 0 3px rgba(206, 18, 17, .12); }
+.dz .pad svg { height: 86px; width: 100%; }
+.dz .pad span { font-size: 13.5px; font-weight: 600; text-align: left; }
+.dz .pad kbd { margin: 0 6px 0 0; }
+.dz .pad-x { position: absolute; top: 4px; right: 6px; font-style: normal; font-size: 18px; color: #766c62; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 6px; opacity: 0; }
+.dz .pad:hover .pad-x { opacity: 1; }
+.dz .pad-x:hover { background: rgba(0, 0, 0, .12); color: var(--red-strong); }
+/* folha de produção impressa: A4 branca, sem pauta */
+.dz-print { display: none; }
+.dz-pg { width: 210mm; height: 296.6mm; overflow: hidden; background: #fff; break-after: page; page-break-after: always; }
+.dz-pg:last-child { break-after: auto; page-break-after: auto; }
+.dz-pg svg { width: 210mm; height: 297mm; display: block; }
+@media print {
+  body.dz-aberta { background: #fff !important; overflow: visible; }
+  body.dz-aberta #root, body.dz-aberta .toast { display: none !important; }
+  body.dz-aberta .dz-print { display: block; }
+  @page { size: A4; margin: 0; }
+}
